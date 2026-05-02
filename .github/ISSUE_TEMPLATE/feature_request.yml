@@ -24,3 +24,26 @@ body:
       label: Alternatives considered
     validations:
       required: false
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: Which part of HBX-ED does this affect most?
+      options:
+        - Canvas editor
+        - Properties panel
+        - Object tree
+        - File import/export
+        - Validation
+        - Testing/developer workflow
+        - Documentation
+        - Other
+    validations:
+      required: false
+  - type: textarea
+    id: examples
+    attributes:
+      label: Examples or references
+      description: Add screenshots, links, or examples from other editors if useful.
+    validations:
+      required: false

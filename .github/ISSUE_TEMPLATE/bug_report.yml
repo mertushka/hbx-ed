@@ -34,11 +34,33 @@ body:
       label: Actual behavior
     validations:
       required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser
+      description: Which browser and version did you use?
+      placeholder: Chrome 124, Firefox 125, Edge 124, etc.
+    validations:
+      required: false
   - type: textarea
     id: hbs
     attributes:
       label: Stadium file or snippet
       description: Attach or paste a minimal `.hbs` example if it helps reproduce the problem.
       render: text
+    validations:
+      required: false
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots or recording
+      description: Add screenshots or a short recording if the issue is visual.
+    validations:
+      required: false
+  - type: textarea
+    id: extra
+    attributes:
+      label: Additional context
+      description: Anything else that may help explain or reproduce the problem.
     validations:
       required: false
