@@ -72,14 +72,14 @@ It is built for map makers who want fast iteration without giving up control ove
 
 ## Editing Toolkit
 
-| Workflow | Included |
-| --- | --- |
-| Create | Blank grass, classic, hockey, and empty templates |
-| Modify | Move, edit, duplicate, delete, copy, paste |
-| Navigate | Zoom, pan, object tree selection, context menus |
-| Validate | Geometry checks, reference checks, trait warnings |
-| Import/export | Open existing `.hbs` files and save compatible output |
-| Preview | Full-screen preview canvas with zoom controls and PNG export |
+| Workflow      | Included                                                     |
+| ------------- | ------------------------------------------------------------ |
+| Create        | Blank grass, classic, hockey, and empty templates            |
+| Modify        | Move, edit, duplicate, delete, copy, paste                   |
+| Navigate      | Zoom, pan, object tree selection, context menus              |
+| Validate      | Geometry checks, reference checks, trait warnings            |
+| Import/export | Open existing `.hbs` files and save compatible output        |
+| Preview       | Full-screen preview canvas with zoom controls and PNG export |
 
 ## Quick Start
 
@@ -104,28 +104,28 @@ npm run check
 
 ## Shortcuts
 
-| Shortcut | Action |
-| --- | --- |
-| `V` | Select |
-| `H` | Pan |
-| `A` | Add vertex |
-| `S` | Add segment |
-| `D` | Add disc |
-| `G` | Add goal |
-| `P` | Add plane |
-| `J` | Add joint |
-| `R` | Add red spawn |
-| `B` | Add blue spawn |
-| `Ctrl+Z` / `Ctrl+Y` | Undo / redo |
-| `Ctrl+C` / `Ctrl+V` | Copy / paste |
-| `Ctrl+D` | Duplicate |
-| `I` | Toggle vertex labels |
-| `O` | Toggle spawn points |
-| `?` | Show shortcuts |
+| Shortcut            | Action               |
+| ------------------- | -------------------- |
+| `V`                 | Select               |
+| `H`                 | Pan                  |
+| `A`                 | Add vertex           |
+| `S`                 | Add segment          |
+| `D`                 | Add disc             |
+| `G`                 | Add goal             |
+| `P`                 | Add plane            |
+| `J`                 | Add joint            |
+| `R`                 | Add red spawn        |
+| `B`                 | Add blue spawn       |
+| `Ctrl+Z` / `Ctrl+Y` | Undo / redo          |
+| `Ctrl+C` / `Ctrl+V` | Copy / paste         |
+| `Ctrl+D`            | Duplicate            |
+| `I`                 | Toggle vertex labels |
+| `O`                 | Toggle spawn points  |
+| `?`                 | Show shortcuts       |
 
 ## Project Status
 
-HBX-ED is in active development and already has a broad unit/jsdom test baseline, CI setup, production build pipeline, and MIT license. Before a public release, the next hardening steps are more real-world stadium fixtures and a manual QA pass.
+HBX-ED is in active development.
 
 ## Contributing
 
