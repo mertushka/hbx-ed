@@ -27,6 +27,10 @@
   <a href="#contributing">Contributing</a>
 </p>
 
+<p align="center">
+  <img src="docs/assets/hbx-ed-screenshot.png" alt="HBX-ED editor showing the classic HaxBall stadium on the canvas" width="100%">
+</p>
+
 ---
 
 ## Overview
