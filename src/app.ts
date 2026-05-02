@@ -115,23 +115,15 @@ export class App {
 
 		this.objectTree = new ObjectTree(
 			(sel) => this.select(sel),
-			(e, sel) => {
-				this.select(sel);
-				this.showObjectContextMenu(e, sel);
-			},
-			() => {
-				if (this.stadium) {
-					this.history.save(this.stadium);
-					this.markDirty();
-				}
-			},
+			(e, sel) => this.showObjectContextMenu(e, sel),
+			() => this.saveMutation(),
 		);
 
 		this.propertiesPanel = new PropertiesPanel(
 			() => {
 				// Save history and update canvas + tree, but do NOT rebuild the
 				// properties form — that would destroy the focused input mid-edit.
-				if (this.stadium) this.history.save(this.stadium);
+				this.saveMutation();
 				this.objectTree.render(
 					this.stadium,
 					this.selection,
@@ -194,10 +186,7 @@ export class App {
 				this.render();
 			},
 			saveHistory: () => {
-				if (this.stadium) {
-					this.history.save(this.stadium);
-					this.markDirty();
-				}
+				this.saveMutation();
 			},
 			refresh: () => this.refresh(),
 			toast: (msg) => this.toast.show(msg),
@@ -278,10 +267,9 @@ export class App {
 			const count = deleteSelections(this.stadium, this.multiSelection.items);
 			this.multiSelection = null;
 			this.renderer.multiSelection = null;
-			this.history.save(this.stadium);
 			this.select(null);
+			this.saveMutation();
 			this.toast.show(`Deleted ${count} objects`);
-			this.markDirty();
 			return;
 		}
 
@@ -289,22 +277,20 @@ export class App {
 		if (!this.stadium || !this.selection) return;
 		const { type } = this.selection;
 		deleteSelections(this.stadium, [this.selection]);
-		this.history.save(this.stadium);
 		this.select(null);
+		this.saveMutation();
 		this.toast.show(`Deleted ${type}`);
-		this.markDirty();
 	}
 
 	private duplicateSelected(): void {
 		if (!this.stadium || !this.selection) return;
 		const nextSelection = duplicateSelection(this.stadium, this.selection);
 		if (!nextSelection) return;
-		this.history.save(this.stadium);
+		this.saveMutation();
 		this.select(nextSelection);
 		this.toast.show(
 			`Duplicated ${nextSelection.type} → #${nextSelection.index}`,
 		);
-		this.markDirty();
 	}
 
 	private copySelected(): void {
@@ -335,9 +321,15 @@ export class App {
 			this.toast.show("Cannot paste: unknown object type");
 			return;
 		}
-		this.history.save(this.stadium);
+		this.saveMutation();
 		this.select(nextSelection);
 		this.toast.show(`Pasted ${nextSelection.type} → #${nextSelection.index}`);
+	}
+
+	private saveMutation(): void {
+		if (!this.stadium) return;
+		this.history.save(this.stadium);
+		this.runValidation();
 		this.markDirty();
 	}
 
@@ -374,6 +366,7 @@ export class App {
 		this.multiSelection = null;
 		this.renderer.multiSelection = null;
 		this.select(null);
+		this.runValidation();
 		this.markDirty();
 		this.updateUndoRedoState();
 	}
@@ -385,6 +378,7 @@ export class App {
 		this.multiSelection = null;
 		this.renderer.multiSelection = null;
 		this.select(null);
+		this.runValidation();
 		this.markDirty();
 		this.updateUndoRedoState();
 	}
@@ -431,10 +425,9 @@ export class App {
 			render: () => this.render(),
 			setCoords: (x, y) => this.statusBar.setCoords(x, y),
 			showContextMenu: (x, y, items) => this.contextMenu.show(x, y, items),
-			select: (selection) => this.select(selection),
 			showObjectContextMenu: (event, selection) =>
 				this.showObjectContextMenu(event, selection),
-			saveHistory: (stadium) => this.history.save(stadium),
+			saveHistory: () => this.saveMutation(),
 		});
 	}
 
@@ -456,15 +449,36 @@ export class App {
 	// ── Context menu ───────────────────────────────────────────────────────────
 
 	private showObjectContextMenu(e: MouseEvent, sel: Selection): void {
-		const items = buildObjectContextMenuItems(this.stadium, sel, {
-			select: (selection) => this.select(selection),
-			deleteSelected: () => this.deleteSelected(),
-			saveHistory: (stadium) => this.history.save(stadium),
-			refresh: () => this.refresh(),
-		});
+		const multiSelectionCount = this.multiSelectionContains(sel)
+			? (this.multiSelection?.items.length ?? 0)
+			: 0;
+		if (multiSelectionCount === 0) this.select(sel);
+
+		const items = buildObjectContextMenuItems(
+			this.stadium,
+			sel,
+			{
+				select: (selection) => this.select(selection),
+				deleteSelected: () => this.deleteSelected(),
+				saveHistory: () => this.saveMutation(),
+				refresh: () => this.refresh(),
+			},
+			multiSelectionCount > 1
+				? { deleteLabel: `Delete ${multiSelectionCount} selected objects` }
+				: undefined,
+		);
 		if (!items) return;
 
 		this.contextMenu.show(e.clientX, e.clientY, items);
+	}
+
+	private multiSelectionContains(selection: Selection): boolean {
+		return (
+			this.multiSelection?.items.some(
+				(item) =>
+					item.type === selection.type && item.index === selection.index,
+			) ?? false
+		);
 	}
 
 	// ── Toolbar & keyboard ─────────────────────────────────────────────────────
@@ -533,6 +547,7 @@ export class App {
 			duplicate: () => this.duplicateSelected(),
 			copy: () => this.copySelected(),
 			paste: () => this.pasteClipboard(),
+			deleteSelected: () => this.deleteSelected(),
 			setTool: (name) => this.setTool(name),
 			toggleVertexLabels: () => {
 				this.renderer.showVertexLabels = !this.renderer.showVertexLabels;

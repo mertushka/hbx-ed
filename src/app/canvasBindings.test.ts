@@ -71,7 +71,6 @@ function setup(options: { world?: WorldPoint; activeName?: string } = {}) {
 		render: vi.fn(),
 		setCoords: vi.fn(),
 		showContextMenu: vi.fn(),
-		select: vi.fn(),
 		showObjectContextMenu: vi.fn(),
 		saveHistory: vi.fn(),
 	};
@@ -187,7 +186,6 @@ describe("bindCanvasEvents", () => {
 			120,
 			expect.any(Array),
 		);
-		expect(actions.select).not.toHaveBeenCalled();
 
 		const items = actions.showContextMenu.mock.calls[0]?.[2] as MenuDef;
 		menuItem(items, "Delete red spawn #0").action();
@@ -196,12 +194,11 @@ describe("bindCanvasEvents", () => {
 		expect(actions.render).toHaveBeenCalledOnce();
 	});
 
-	it("selects hit objects and delegates their context menu", () => {
+	it("delegates hit object context menus without changing selection first", () => {
 		const { actions, canvas } = setup({ world: { x: 30, y: 40 } });
 
 		canvas.dispatchEvent(new MouseEvent("contextmenu", { button: 2 }));
 
-		expect(actions.select).toHaveBeenCalledWith({ type: "vertex", index: 0 });
 		expect(actions.showObjectContextMenu).toHaveBeenCalledWith(
 			expect.any(MouseEvent),
 			{ type: "vertex", index: 0 },
@@ -215,6 +212,5 @@ describe("bindCanvasEvents", () => {
 		canvas.dispatchEvent(new MouseEvent("contextmenu", { button: 2 }));
 
 		expect(actions.showContextMenu).not.toHaveBeenCalled();
-		expect(actions.select).not.toHaveBeenCalled();
 	});
 });

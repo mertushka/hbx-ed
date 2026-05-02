@@ -8,10 +8,15 @@ export interface ObjectContextMenuActions {
 	refresh: () => void;
 }
 
+export interface ObjectContextMenuOptions {
+	deleteLabel?: string;
+}
+
 export function buildObjectContextMenuItems(
 	stadium: StadiumObject | null,
 	selection: Selection,
 	actions: ObjectContextMenuActions,
+	options: ObjectContextMenuOptions = {},
 ): MenuDef | null {
 	const type = selection.type;
 
@@ -68,7 +73,7 @@ export function buildObjectContextMenuItems(
 	}
 
 	items.push({
-		label: `Delete ${type}`,
+		label: options.deleteLabel ?? `Delete ${type}`,
 		action: () => actions.deleteSelected(),
 		variant: "danger",
 	});

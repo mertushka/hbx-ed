@@ -126,6 +126,7 @@ npm run check
 | `Ctrl+Z` / `Ctrl+Y` | Undo / redo          |
 | `Ctrl+C` / `Ctrl+V` | Copy / paste         |
 | `Ctrl+D`            | Duplicate            |
+| `Del`               | Delete selected      |
 | `I`                 | Toggle vertex labels |
 | `O`                 | Toggle spawn points  |
 | `?`                 | Show shortcuts       |

@@ -20,7 +20,6 @@ export interface CanvasBindingsOptions {
 	render: () => void;
 	setCoords: (x: number, y: number) => void;
 	showContextMenu: (x: number, y: number, items: MenuDef) => void;
-	select: (selection: Selection) => void;
 	showObjectContextMenu: (event: MouseEvent, selection: Selection) => void;
 	saveHistory: (stadium: StadiumObject) => void;
 }
@@ -37,7 +36,6 @@ export function bindCanvasEvents({
 	render,
 	setCoords,
 	showContextMenu,
-	select,
 	showObjectContextMenu,
 	saveHistory,
 }: CanvasBindingsOptions): void {
@@ -103,7 +101,6 @@ export function bindCanvasEvents({
 
 		const hit = hitTest(stadium, world.x, world.y, zoom);
 		if (hit) {
-			select(hit);
 			showObjectContextMenu(e, hit);
 		}
 	});

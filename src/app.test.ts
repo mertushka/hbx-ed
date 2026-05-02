@@ -2,6 +2,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import indexHtml from "../index.html?raw";
 import { App } from "./app.ts";
+import type {
+	MultiSelection,
+	Selection,
+	StadiumObject,
+} from "./types/stadium.ts";
 
 function setElementSize(el: HTMLElement, width: number, height: number): void {
 	Object.defineProperty(el, "clientWidth", {
@@ -105,6 +110,57 @@ function menuItemContaining(text: string): HTMLElement {
 	);
 	if (!item) throw new Error(`Expected context menu item containing ${text}`);
 	return item;
+}
+
+function propInputFor(label: string): HTMLInputElement {
+	const row = [...document.querySelectorAll<HTMLElement>(".prop-row")].find(
+		(el) => el.querySelector<HTMLElement>(".prop-label")?.textContent === label,
+	);
+	const input = row?.querySelector<HTMLInputElement>("input");
+	if (!input) throw new Error(`Expected property input for ${label}`);
+	return input;
+}
+
+interface AppInternals {
+	camera: {
+		worldToScreen(
+			wx: number,
+			wy: number,
+			canvasW: number,
+			canvasH: number,
+		): { x: number; y: number };
+	};
+	multiSelection: MultiSelection | null;
+	objectTree: {
+		render(
+			stadium: StadiumObject | null,
+			selection: Selection | null,
+			multiSelection?: MultiSelection | null,
+		): void;
+	};
+	renderer: {
+		multiSelection: MultiSelection | null;
+	};
+	stadium: StadiumObject | null;
+}
+
+function appInternals(app: App): AppInternals {
+	return app as unknown as AppInternals;
+}
+
+// Test-only shortcut: this bypasses AppContext.setMultiSelection, so it does not
+// update the status bar. Use real UI interactions, or update status explicitly,
+// when a test depends on pre-delete status text.
+function setMultiSelection(
+	app: App,
+	items: MultiSelection["items"],
+): AppInternals {
+	const internals = appInternals(app);
+	const multiSelection = { items };
+	internals.multiSelection = multiSelection;
+	internals.renderer.multiSelection = multiSelection;
+	internals.objectTree.render(internals.stadium, null, multiSelection);
+	return internals;
 }
 
 function installFileReaderMock(read: (file: File) => string): () => void {
@@ -468,5 +524,152 @@ describe("App", () => {
 		expect(document.getElementById("status-sel")?.textContent).toBe(
 			"nothing selected",
 		);
+	});
+
+	it("preserves multi-selection when deleting from the object tree context menu", () => {
+		const app = new App();
+		const internals = setMultiSelection(app, [
+			{ type: "vertex", index: 0 },
+			{ type: "vertex", index: 1 },
+		]);
+		const startVertexCount = internals.stadium?.vertexes.length ?? 0;
+
+		itemContaining("v0").dispatchEvent(
+			new MouseEvent("contextmenu", {
+				clientX: 30,
+				clientY: 40,
+				bubbles: true,
+				cancelable: true,
+			}),
+		);
+
+		expect(internals.multiSelection?.items).toHaveLength(2);
+		menuItemContaining("Delete 2 selected objects").click();
+
+		expect(internals.stadium?.vertexes).toHaveLength(startVertexCount - 2);
+		expect(internals.multiSelection).toBeNull();
+		expect(document.getElementById("status-sel")?.textContent).toBe(
+			"nothing selected",
+		);
+	});
+
+	it("preserves multi-selection when deleting from the canvas context menu", () => {
+		const app = new App();
+		const internals = setMultiSelection(app, [
+			{ type: "vertex", index: 0 },
+			{ type: "vertex", index: 1 },
+		]);
+		const stadium = internals.stadium;
+		const firstVertex = stadium?.vertexes[0];
+		if (!stadium || !firstVertex) throw new Error("Expected classic vertices");
+		const startVertexCount = stadium.vertexes.length;
+		const screen = internals.camera.worldToScreen(
+			firstVertex.x,
+			firstVertex.y,
+			800,
+			400,
+		);
+
+		canvasMouse("contextmenu", screen.x, screen.y);
+
+		expect(internals.multiSelection?.items).toHaveLength(2);
+		menuItemContaining("Delete 2 selected objects").click();
+
+		expect(stadium.vertexes).toHaveLength(startVertexCount - 2);
+		expect(internals.multiSelection).toBeNull();
+	});
+
+	it("refreshes validation after deleting an object", () => {
+		const restoreFileReader = installFileReaderMock(
+			() => `{
+			name: 'Delete Validation',
+			width: 100,
+			height: 50,
+			vertexes: [],
+			segments: [],
+			goals: [{ team: 'red', p0: [0, 0], p1: [0, 0] }],
+			discs: [],
+			planes: [],
+			joints: [],
+		}`,
+		);
+		try {
+			new App();
+			const fileInput = document.getElementById(
+				"file-input",
+			) as HTMLInputElement;
+			Object.defineProperty(fileInput, "files", {
+				value: [new File([""], "delete-validation.hbs")],
+				configurable: true,
+			});
+			fileInput.dispatchEvent(new Event("change"));
+
+			expect(
+				document.getElementById("validation-panel")?.textContent,
+			).toContain("goal0: p0 === p1");
+
+			itemContaining("goal0").dispatchEvent(
+				new MouseEvent("contextmenu", {
+					clientX: 30,
+					clientY: 40,
+					bubbles: true,
+					cancelable: true,
+				}),
+			);
+			menuItemContaining("Delete goal").click();
+
+			expect(
+				document.getElementById("validation-panel")?.textContent,
+			).not.toContain("goal0: p0 === p1");
+		} finally {
+			restoreFileReader();
+		}
+	});
+
+	it("refreshes validation after property edits, undo, and redo", () => {
+		const restoreFileReader = installFileReaderMock(
+			() => `{
+			name: 'Property Validation',
+			width: 100,
+			height: 50,
+			vertexes: [{ x: 0, y: 0 }, { x: 20, y: 0 }],
+			segments: [{ v0: 0, v1: 1 }],
+			goals: [],
+			discs: [],
+			planes: [],
+			joints: [],
+		}`,
+		);
+		try {
+			new App();
+			const fileInput = document.getElementById(
+				"file-input",
+			) as HTMLInputElement;
+			Object.defineProperty(fileInput, "files", {
+				value: [new File([""], "property-validation.hbs")],
+				configurable: true,
+			});
+			fileInput.dispatchEvent(new Event("change"));
+			expect(document.getElementById("validation-panel")?.textContent).toBe("");
+
+			itemContaining("seg0").click();
+			const v1Input = propInputFor("v1");
+			v1Input.value = "9";
+			v1Input.dispatchEvent(new Event("change"));
+
+			expect(
+				document.getElementById("validation-panel")?.textContent,
+			).toContain("seg0: v1=9 out of range");
+
+			click("#btn-undo");
+			expect(document.getElementById("validation-panel")?.textContent).toBe("");
+
+			click("#btn-redo");
+			expect(
+				document.getElementById("validation-panel")?.textContent,
+			).toContain("seg0: v1=9 out of range");
+		} finally {
+			restoreFileReader();
+		}
 	});
 });
