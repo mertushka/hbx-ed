@@ -148,6 +148,9 @@ function appInternals(app: App): AppInternals {
 	return app as unknown as AppInternals;
 }
 
+// Test-only shortcut: this bypasses AppContext.setMultiSelection, so it does not
+// update the status bar. Use real UI interactions, or update status explicitly,
+// when a test depends on pre-delete status text.
 function setMultiSelection(
 	app: App,
 	items: MultiSelection["items"],

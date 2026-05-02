@@ -116,18 +116,14 @@ export class App {
 		this.objectTree = new ObjectTree(
 			(sel) => this.select(sel),
 			(e, sel) => this.showObjectContextMenu(e, sel),
-			() => {
-				if (this.stadium) {
-					this.saveMutation();
-				}
-			},
+			() => this.saveMutation(),
 		);
 
 		this.propertiesPanel = new PropertiesPanel(
 			() => {
 				// Save history and update canvas + tree, but do NOT rebuild the
 				// properties form — that would destroy the focused input mid-edit.
-				if (this.stadium) this.saveMutation();
+				this.saveMutation();
 				this.objectTree.render(
 					this.stadium,
 					this.selection,
@@ -190,9 +186,7 @@ export class App {
 				this.render();
 			},
 			saveHistory: () => {
-				if (this.stadium) {
-					this.saveMutation();
-				}
+				this.saveMutation();
 			},
 			refresh: () => this.refresh(),
 			toast: (msg) => this.toast.show(msg),
