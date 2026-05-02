@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 240" role="img" aria-label="HBX-ED">
+  <rect width="900" height="240" rx="28" fill="#0e0f12" />
+  <rect x="22" y="22" width="856" height="196" rx="18" fill="#16181e" stroke="#2a2d38" stroke-width="2" />
+  <path d="M60 174h780M60 66h780M184 42v156M716 42v156" stroke="#2a2d38" stroke-width="2" opacity=".72" />
+  <path d="M84 168 160 96l88 54 84-76" fill="none" stroke="#4a9eff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" />
+  <circle cx="84" cy="168" r="10" fill="#39c77c" />
+  <circle cx="160" cy="96" r="10" fill="#f5a623" />
+  <circle cx="248" cy="150" r="10" fill="#4a9eff" />
+  <circle cx="332" cy="74" r="10" fill="#f5a623" />
+  <text
+    x="478"
+    y="149"
+    font-family="Chakra Petch, Segoe UI, Arial, sans-serif"
+    font-size="92"
+    font-weight="700"
+    letter-spacing="8"
+    fill="#f5a623"
+  >HBX-ED</text>
+  <path d="M486 174h324" stroke="#39c77c" stroke-width="6" stroke-linecap="round" />
+</svg>

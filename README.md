@@ -9,6 +9,7 @@
 </p>
 
 <p align="center">
+  <a href="https://hbx-ed.1351820.xyz/"><img alt="Live App" src="https://img.shields.io/badge/live-app-22c55e?logo=cloudflare&logoColor=white"></a>
   <a href="https://github.com/mertushka/hbx-ed/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/mertushka/hbx-ed/actions/workflows/ci.yml/badge.svg?branch=main"></a>
   <a href="https://github.com/mertushka/hbx-ed/actions/workflows/ci.yml"><img alt="Tests" src="https://img.shields.io/github/actions/workflow/status/mertushka/hbx-ed/ci.yml?branch=main&label=tests&logo=vitest"></a>
   <a href="https://codecov.io/gh/mertushka/hbx-ed"><img alt="Coverage" src="https://codecov.io/gh/mertushka/hbx-ed/branch/main/graph/badge.svg"></a>
@@ -18,6 +19,8 @@
 </p>
 
 <p align="center">
+  <a href="https://hbx-ed.1351820.xyz/">Live App</a>
+  |
   <a href="#features">Features</a>
   |
   <a href="#quick-start">Quick Start</a>
