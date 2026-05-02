@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HBX-ED - HaxBall Stadium Editor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div id="app">
+      <!-- Toolbar -->
+      <div id="toolbar">
+        <span id="title-logo">HBX·ED</span>
+        <div class="t-sep"></div>
+
+        <button type="button" class="t-btn" id="btn-open">
+          <svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M2 4h4l1.5-2H12v8H2z" stroke="currentColor" stroke-width="1.2" fill="none" />
+          </svg>
+          Open
+        </button>
+        <button type="button" class="t-btn" id="btn-new">
+          <svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <rect x="2" y="2" width="10" height="10" rx="1" stroke="currentColor" stroke-width="1.2"/>
+            <path d="M7 5v4M5 7h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+          </svg>
+          New
+        </button>
+        <button type="button" class="t-btn" id="btn-save">
+          <svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <rect x="2" y="2" width="10" height="10" rx="1" stroke="currentColor" stroke-width="1.2" />
+            <rect x="4" y="8" width="6" height="4" fill="currentColor" opacity=".5" />
+            <rect x="4" y="2" width="6" height="4" stroke="currentColor" stroke-width="1.2" />
+          </svg>
+          Save
+        </button>
+        <input type="file" id="file-input" accept=".hbs,.json,.json5" />
+
+        <div class="t-sep"></div>
+
+        <button type="button" class="t-btn active" data-tool="select">
+          <svg aria-hidden="true" focusable="false" width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path d="M2 2l3 8 2-3 3 1-4-6z" stroke="currentColor" stroke-width="1.3" fill="currentColor" opacity=".3" />
+          </svg>
+          Select
+        </button>
+        <button type="button" class="t-btn" data-tool="pan">
+          <svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <circle cx="7" cy="7" r="4" stroke="currentColor" stroke-width="1.2" />
+            <path d="M7 1v2M7 11v2M1 7h2M11 7h2" stroke="currentColor" stroke-width="1.3" />
+          </svg>
+          Pan
+        </button>
+
+        <div class="t-sep"></div>
+
+        <button type="button" class="t-btn" data-tool="vertex">
+          <svg aria-hidden="true" focusable="false" width="10" height="10" viewBox="0 0 10 10">
+            <circle cx="5" cy="5" r="3" stroke="currentColor" stroke-width="1.3" fill="none" />
+          </svg>
+          Vertex
+        </button>
+        <button type="button" class="t-btn" data-tool="segment">
+          <svg aria-hidden="true" focusable="false" width="14" height="10" viewBox="0 0 14 10">
+            <circle cx="2" cy="8" r="1.5" fill="currentColor" />
+            <line x1="2" y1="8" x2="12" y2="2" stroke="currentColor" stroke-width="1.3" />
+            <circle cx="12" cy="2" r="1.5" fill="currentColor" />
+          </svg>
+          Segment
+        </button>
+        <button type="button" class="t-btn" data-tool="disc">
+          <svg aria-hidden="true" focusable="false" width="12" height="12" viewBox="0 0 12 12">
+            <circle cx="6" cy="6" r="4" stroke="currentColor" stroke-width="1.3" fill="currentColor" opacity=".25" />
+          </svg>
+          Disc
+        </button>
+        <button type="button" class="t-btn" data-tool="goal">
+          <svg aria-hidden="true" focusable="false" width="14" height="10" viewBox="0 0 14 10">
+            <line x1="7" y1="0" x2="7" y2="10" stroke="currentColor" stroke-width="1.4" />
+            <rect x="2" y="0" width="5" height="10" stroke="currentColor" stroke-width="1.2" fill="none" opacity=".4" />
+          </svg>
+          Goal
+        </button>
+        <button type="button" class="t-btn" data-tool="plane">
+          <svg aria-hidden="true" focusable="false" width="14" height="10" viewBox="0 0 14 10">
+            <path d="M0 5h14M6 2l4 3-4 3" stroke="currentColor" stroke-width="1.3" />
+          </svg>
+          Plane
+        </button>
+        <button type="button" class="t-btn" data-tool="joint" title="Add Joint (J)">
+          <svg aria-hidden="true" focusable="false" width="14" height="10" viewBox="0 0 14 10">
+            <circle cx="2" cy="5" r="2" stroke="currentColor" stroke-width="1.2" fill="none"/>
+            <line x1="4" y1="5" x2="10" y2="5" stroke="currentColor" stroke-width="1.2" stroke-dasharray="2,1"/>
+            <circle cx="12" cy="5" r="2" stroke="currentColor" stroke-width="1.2" fill="none"/>
+          </svg>
+          Joint
+        </button>
+        <button type="button" class="t-btn" data-tool="spawn-red" title="Add Red Spawn (R)">
+          <svg aria-hidden="true" focusable="false" width="12" height="12" viewBox="0 0 12 12">
+            <circle cx="6" cy="6" r="4.5" stroke="#ff4d6d" stroke-width="1.3" fill="rgba(255,77,109,0.2)"/>
+            <text x="6" y="9" text-anchor="middle" font-size="6" fill="#ff4d6d" font-weight="bold">R</text>
+          </svg>
+          RedSpawn
+        </button>
+        <button type="button" class="t-btn" data-tool="spawn-blue" title="Add Blue Spawn (B)">
+          <svg aria-hidden="true" focusable="false" width="12" height="12" viewBox="0 0 12 12">
+            <circle cx="6" cy="6" r="4.5" stroke="#4d9eff" stroke-width="1.3" fill="rgba(77,158,255,0.2)"/>
+            <text x="6" y="9" text-anchor="middle" font-size="6" fill="#4d9eff" font-weight="bold">B</text>
+          </svg>
+          BlueSpawn
+        </button>
+
+        <div class="t-sep"></div>
+
+        <button type="button" class="t-btn" id="btn-undo" title="Undo (Ctrl+Z)">
+          <svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M3 7c0-3 2.5-4 5-4 2 0 3.5 1 3.5 3.5 0 2-1.5 3.5-4 3.5H4" stroke="currentColor" stroke-width="1.3" />
+            <path d="M3 4l-2 3 2 3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" fill="none" />
+          </svg>
+        </button>
+        <button type="button" class="t-btn" id="btn-redo" title="Redo (Ctrl+Y)">
+          <svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M11 7c0-3-2.5-4-5-4-2 0-3.5 1-3.5 3.5 0 2 1.5 3.5 4 3.5H10" stroke="currentColor" stroke-width="1.3" />
+            <path d="M11 4l2 3-2 3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" fill="none" />
+          </svg>
+        </button>
+
+        <div class="t-sep"></div>
+
+        <button type="button" class="t-btn" id="btn-toggle-labels" title="Toggle vertex labels (I)">
+          <svg aria-hidden="true" focusable="false" width="14" height="12" viewBox="0 0 14 12" fill="none">
+            <circle cx="3" cy="9" r="2" stroke="currentColor" stroke-width="1.2"/>
+            <text x="6.5" y="10" font-size="7" fill="currentColor" font-family="monospace">v0</text>
+          </svg>
+          Labels
+        </button>
+        <button type="button" class="t-btn active" id="btn-toggle-spawns" title="Toggle spawn points (O)">
+          <svg aria-hidden="true" focusable="false" width="12" height="12" viewBox="0 0 12 12">
+            <circle cx="4" cy="6" r="2.5" stroke="#ff4d6d" stroke-width="1.2" fill="none"/>
+            <circle cx="9" cy="6" r="2.5" stroke="#4d9eff" stroke-width="1.2" fill="none"/>
+          </svg>
+          Spawns
+        </button>
+
+        <div class="t-sep"></div>
+
+        <button type="button" class="t-btn" id="btn-preview" title="HaxBall Preview">
+          <svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.2"/>
+            <path d="M5 4.5l5 2.5-5 2.5z" fill="currentColor"/>
+          </svg>
+          Preview
+        </button>
+
+        <div class="toolbar-spacer"></div>
+        <span id="stadium-name-display">No stadium loaded</span>
+      </div>
+
+      <!-- Main layout -->
+      <div id="main">
+        <div id="sidebar-left">
+          <div class="panel-head">Objects</div>
+          <div class="panel-scroll" id="obj-tree"></div>
+        </div>
+
+        <div id="canvas-area">
+          <canvas id="main-canvas"></canvas>
+          <div id="canvas-overlay">
+            <button type="button" class="ov-btn" id="btn-zoom-in">+</button>
+            <button type="button" class="ov-btn" id="btn-zoom-out">−</button>
+            <button type="button" class="ov-btn" id="btn-zoom-fit" style="font-size:11px">⊡</button>
+          </div>
+          <div id="drop-overlay">
+            <div class="drop-box">
+              <h2>DROP HBS FILE</h2>
+              <p>or click Open to browse</p>
+            </div>
+          </div>
+        </div>
+
+        <div id="sidebar-right">
+          <div class="panel-head">Properties</div>
+          <div class="panel-scroll" id="props-panel">
+            <div id="props-placeholder">Select an object or load a stadium to begin editing.</div>
+            <div id="props-inner"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="statusbar">
+        <span id="status-coords">x: 0  y: 0</span>
+        <span id="status-zoom">zoom: 100%</span>
+        <span id="status-sel">nothing selected</span>
+        <span id="status-snap" style="display:none;color:var(--accent);font-size:10px;letter-spacing:1px">⊞ SNAP</span>
+        <span id="copyright">copyright © <a href="https://1351820.xyz" target="_blank">1351820</a> studios</span>
+        <span id="status-msg"></span>
+      </div>
+    </div>
+
+    <div id="ctx-menu"></div>
+    <div id="toast"></div>
+
+    <!-- New Stadium modal -->
+    <div id="new-modal" class="modal-overlay">
+      <div class="modal-box" style="width:420px">
+        <div class="modal-head">
+          <span class="modal-title">New Stadium</span>
+          <button type="button" class="modal-close" id="new-modal-close">✕</button>
+        </div>
+        <div class="modal-body" style="padding:16px">
+          <div style="margin-bottom:14px">
+            <label style="display:block;font-size:11px;color:var(--text2);margin-bottom:4px">Stadium name</label>
+            <input id="new-stadium-name" type="text" class="prop-input" value="My Stadium" style="width:100%;font-size:13px;padding:6px 8px">
+          </div>
+          <div style="margin-bottom:18px">
+            <div style="font-size:11px;color:var(--text2);margin-bottom:8px">Template</div>
+            <div id="template-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
+          </div>
+          <button type="button" id="btn-create-stadium" class="prop-btn" style="font-size:13px;padding:8px">Create Stadium</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Keyboard shortcut modal -->
+    <div id="shortcut-modal" class="modal-overlay">
+      <div class="modal-box">
+        <div class="modal-head">
+          <span class="modal-title">Keyboard Shortcuts</span>
+          <button type="button" class="modal-close" id="shortcut-close">✕</button>
+        </div>
+        <div class="modal-body shortcut-grid">
+          <div class="sc-group">
+            <div class="sc-group-title">Tools</div>
+            <div class="sc-row"><kbd>V</kbd><span>Select / Move</span></div>
+            <div class="sc-row"><kbd>H</kbd><span>Pan</span></div>
+            <div class="sc-row"><kbd>A</kbd><span>Add Vertex</span></div>
+            <div class="sc-row"><kbd>S</kbd><span>Add Segment</span></div>
+            <div class="sc-row"><kbd>D</kbd><span>Add Disc</span></div>
+            <div class="sc-row"><kbd>G</kbd><span>Add Goal</span></div>
+            <div class="sc-row"><kbd>P</kbd><span>Add Plane</span></div>
+            <div class="sc-row"><kbd>J</kbd><span>Add Joint</span></div>
+            <div class="sc-row"><kbd>R</kbd><span>Add Red Spawn</span></div>
+            <div class="sc-row"><kbd>B</kbd><span>Add Blue Spawn</span></div>
+          </div>
+          <div class="sc-group">
+            <div class="sc-group-title" style="margin-top:10px">Edit</div>
+            <div class="sc-row"><kbd>Ctrl</kbd><kbd>Z</kbd><span>Undo</span></div>
+            <div class="sc-row"><kbd>Ctrl</kbd><kbd>Y</kbd><span>Redo</span></div>
+            <div class="sc-row"><kbd>Ctrl</kbd><kbd>D</kbd><span>Duplicate</span></div>
+            <div class="sc-row"><kbd>Ctrl</kbd><kbd>C</kbd><span>Copy</span></div>
+            <div class="sc-row"><kbd>Ctrl</kbd><kbd>V</kbd><span>Paste</span></div>
+            <div class="sc-row"><kbd>Ctrl</kbd><kbd>S</kbd><span>Save</span></div>
+            <div class="sc-row"><kbd>Del</kbd><span>Delete selected</span></div>
+            <div class="sc-row"><kbd>Esc</kbd><span>Deselect / cancel</span></div>
+            <div class="sc-group-title" style="margin-top:10px">Selection</div>
+            <div class="sc-row"><kbd>Shift</kbd><kbd>click</kbd><span>Multi-select</span></div>
+            <div class="sc-row"><kbd>Shift</kbd><kbd>drag</kbd><span>Box select</span></div>
+            <div class="sc-row"><kbd>Shift</kbd><span>Snap to grid</span></div>
+          </div>
+          <div class="sc-group">
+            <div class="sc-group-title">View</div>
+            <div class="sc-row"><kbd>I</kbd><span>Toggle vertex labels</span></div>
+            <div class="sc-row"><kbd>O</kbd><span>Toggle spawn points</span></div>
+            <div class="sc-row"><kbd>Scroll</kbd><span>Zoom</span></div>
+            <div class="sc-row"><kbd>Middle</kbd><span>Pan</span></div>
+            <div class="sc-row"><kbd>Alt</kbd><kbd>drag</kbd><span>Pan</span></div>
+            <div class="sc-row"><kbd>?</kbd><span>This dialog</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Validation panel -->
+    <div id="validation-panel"></div>
+
+    <!-- Preview overlay -->
+    <div id="preview-overlay">
+      <canvas id="preview-canvas"></canvas>
+      <div id="preview-hud">
+        <span id="preview-title">Preview</span>
+        <div id="preview-controls">
+          <button type="button" class="ov-btn" id="preview-zoom-in">+</button>
+          <button type="button" class="ov-btn" id="preview-zoom-out">−</button>
+          <button type="button" class="ov-btn" id="preview-zoom-fit" style="font-size:11px">⊡</button>
+          <button type="button" class="ov-btn" id="preview-export" title="Export as PNG" style="font-size:12px">↓</button>
+          <button type="button" class="ov-btn" id="preview-close" title="Close preview (Escape)" style="color:var(--red)">✕</button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
