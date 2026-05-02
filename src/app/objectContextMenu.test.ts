@@ -55,6 +55,22 @@ describe("buildObjectContextMenuItems", () => {
 		expect(menuItem(items, "Delete vertex").variant).toBe("danger");
 	});
 
+	it("supports a custom delete label for multi-selection menus", () => {
+		const act = actions();
+		const items = buildObjectContextMenuItems(
+			stadium(),
+			{ type: "vertex", index: 1 },
+			act,
+			{ deleteLabel: "Delete 2 selected objects" },
+		);
+		if (!items) throw new Error("Expected menu items");
+
+		menuItem(items, "Delete 2 selected objects").action();
+
+		expect(act.deleteSelected).toHaveBeenCalledOnce();
+		expect(menuItem(items, "Delete 2 selected objects").variant).toBe("danger");
+	});
+
 	it("adds segment actions that reverse geometry and toggle visibility", () => {
 		const map = stadium();
 		const act = actions();

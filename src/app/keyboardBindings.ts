@@ -24,6 +24,7 @@ export interface KeyboardBindingsOptions {
 	duplicate: () => void;
 	copy: () => void;
 	paste: () => void;
+	deleteSelected: () => void;
 	setTool: (name: string) => void;
 	toggleVertexLabels: () => void;
 	toggleSpawnPoints: () => void;
@@ -46,6 +47,7 @@ export function bindKeyboard({
 	duplicate,
 	copy,
 	paste,
+	deleteSelected,
 	setTool,
 	toggleVertexLabels,
 	toggleSpawnPoints,
@@ -67,6 +69,12 @@ export function bindKeyboard({
 		}
 
 		if (isEditingTarget(e.target)) return;
+
+		if (e.key === "Delete" || e.key === "Del") {
+			e.preventDefault();
+			deleteSelected();
+			return;
+		}
 
 		const toolName = TOOL_KEYS[e.key.toLowerCase()];
 		if (toolName) {

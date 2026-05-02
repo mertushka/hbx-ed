@@ -18,6 +18,7 @@ function setup(overrides: Partial<Parameters<typeof bindKeyboard>[0]> = {}) {
 		duplicate: vi.fn(),
 		copy: vi.fn(),
 		paste: vi.fn(),
+		deleteSelected: vi.fn(),
 		setTool: vi.fn(),
 		toggleVertexLabels: vi.fn(),
 		toggleSpawnPoints: vi.fn(),
@@ -76,14 +77,27 @@ describe("bindKeyboard", () => {
 		expect(actions.toggleSpawnPoints).toHaveBeenCalledOnce();
 	});
 
-	it("ignores tool keys from editing targets", () => {
+	it("deletes the current selection from the Delete key outside text inputs", () => {
+		const { actions, doc } = setup();
+
+		keydown(doc, "Delete");
+		keydown(doc, "Del");
+
+		expect(actions.deleteSelected).toHaveBeenCalledTimes(2);
+	});
+
+	it("ignores tool keys and Delete from editing targets", () => {
 		const { actions, doc } = setup();
 		const input = doc.getElementById("editor-input") as HTMLInputElement;
 		input.dispatchEvent(
 			new KeyboardEvent("keydown", { key: "h", bubbles: true }),
 		);
+		input.dispatchEvent(
+			new KeyboardEvent("keydown", { key: "Delete", bubbles: true }),
+		);
 
 		expect(actions.setTool).not.toHaveBeenCalled();
+		expect(actions.deleteSelected).not.toHaveBeenCalled();
 	});
 
 	it("tracks shift state and closes modal layers on escape", () => {
