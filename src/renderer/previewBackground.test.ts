@@ -169,7 +169,7 @@ describe("drawPreviewBackground", () => {
 		expect(ctx.setLineDash).toHaveBeenCalledWith([7.5, 7.5]);
 		expect(ctx.setLineDash).toHaveBeenCalledWith([]);
 		expect(ctx.arc).toHaveBeenCalledWith(
-			0,
+			80,
 			0,
 			25,
 			-Math.PI / 2,
@@ -177,7 +177,7 @@ describe("drawPreviewBackground", () => {
 			false,
 		);
 		expect(ctx.arc).toHaveBeenCalledWith(
-			0,
+			-80,
 			0,
 			25,
 			-Math.PI / 2,

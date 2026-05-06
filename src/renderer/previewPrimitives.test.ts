@@ -67,9 +67,9 @@ describe("preview primitive drawing", () => {
 		expect(toPreviewCssColor(null)).toBeNull();
 		expect(toPreviewCssColor("transparent")).toBeNull();
 		expect(toPreviewCssColor(-1)).toBeNull();
-		expect(toPreviewCssColor([1, 2, 3])).toBe("rgba(1,2,3,255)");
-		expect(toPreviewCssColor(0x123456)).toBe("rgba(18,52,86,255)");
-		expect(toPreviewCssColor("ABCDEF")).toBe("rgba(171,205,239,255)");
+		expect(toPreviewCssColor([1, 2, 3])).toBe("rgba(1,2,3,1)");
+		expect(toPreviewCssColor(0x123456)).toBe("rgba(18,52,86,1)");
+		expect(toPreviewCssColor("ABCDEF")).toBe("rgba(171,205,239,1)");
 		expect(toPreviewCssColor("red")).toBeNull();
 	});
 
@@ -81,13 +81,23 @@ describe("preview primitive drawing", () => {
 		expect(ctx.beginPath).toHaveBeenCalledOnce();
 		expect(ctx.moveTo).toHaveBeenCalledWith(0, 0);
 		expect(ctx.lineTo).toHaveBeenCalledWith(10, 0);
-		expect(ctx.styles.strokeStyle).toBe("rgba(255,255,255,255)");
+		expect(ctx.styles.strokeStyle).toBe("rgba(255,255,255,1)");
 		expect(ctx.stroke).toHaveBeenCalledOnce();
 
 		const invisibleCtx = mockContext();
 		drawPreviewSegment(invisibleCtx, { v0: 0, v1: 1, vis: false }, verts, {});
 
 		expect(invisibleCtx.beginPath).not.toHaveBeenCalled();
+
+		const transparentCtx = mockContext();
+		drawPreviewSegment(
+			transparentCtx,
+			{ v0: 0, v1: 1, color: "transparent" },
+			verts,
+			{},
+		);
+
+		expect(transparentCtx.beginPath).not.toHaveBeenCalled();
 	});
 
 	it("draws curved segments through resolved traits", () => {
@@ -106,7 +116,7 @@ describe("preview primitive drawing", () => {
 		const arcCall = vi.mocked(ctx.arc).mock.calls[0];
 		expect(arcCall).toBeDefined();
 		expect(arcCall?.[5]).toBe(true);
-		expect(ctx.styles.strokeStyle).toBe("rgba(0,255,0,255)");
+		expect(ctx.styles.strokeStyle).toBe("rgba(0,255,0,1)");
 	});
 
 	it("draws joints with game defaults and skips transparent joints", () => {
@@ -126,7 +136,7 @@ describe("preview primitive drawing", () => {
 
 		expect(ctx.moveTo).toHaveBeenCalledWith(1, 2);
 		expect(ctx.lineTo).toHaveBeenCalledWith(3, 4);
-		expect(ctx.styles.strokeStyle).toBe("rgba(0,0,0,255)");
+		expect(ctx.styles.strokeStyle).toBe("rgba(0,0,0,1)");
 		expect(ctx.stroke).toHaveBeenCalledOnce();
 	});
 
@@ -139,7 +149,7 @@ describe("preview primitive drawing", () => {
 		drawPreviewDisc(ctx, { pos: [5, 6], trait: "ball" }, traits);
 
 		expect(ctx.arc).toHaveBeenCalledWith(5, 6, 12, 0, Math.PI * 2, false);
-		expect(ctx.styles.fillStyle).toBe("rgba(255,0,0,255)");
+		expect(ctx.styles.fillStyle).toBe("rgba(255,0,0,1)");
 		expect(ctx.styles.strokeStyle).toBe("black");
 		expect(ctx.fill).toHaveBeenCalledOnce();
 		expect(ctx.stroke).toHaveBeenCalledOnce();

@@ -23,48 +23,50 @@ export function renderBallPhysicsSection(
 
 	if (isSec) return;
 
-	if (!s.ballPhysics || s.ballPhysics === "disc0") {
-		s.ballPhysics = createDefaultBallPhysics();
-	}
-	const bp = s.ballPhysics;
+	const bp =
+		!s.ballPhysics || s.ballPhysics === "disc0"
+			? createDefaultBallPhysics()
+			: s.ballPhysics;
 
 	sec
 		.num("pos.x", bp.pos?.[0] ?? 0, (n) => {
-			bp.pos ??= [0, 0];
-			bp.pos[0] = n;
+			const ball = ensureBallPhysics(s);
+			ball.pos ??= [0, 0];
+			ball.pos[0] = n;
 			notify();
 		})
 		.num("pos.y", bp.pos?.[1] ?? 0, (n) => {
-			bp.pos ??= [0, 0];
-			bp.pos[1] = n;
+			const ball = ensureBallPhysics(s);
+			ball.pos ??= [0, 0];
+			ball.pos[1] = n;
 			notify();
 		})
 		.num("radius", bp.radius ?? 10, (n) => {
-			bp.radius = n;
+			ensureBallPhysics(s).radius = n;
 			notify();
 		})
 		.num("invMass", bp.invMass ?? 1, (n) => {
-			bp.invMass = n;
+			ensureBallPhysics(s).invMass = n;
 			notify();
 		})
 		.num("damping", bp.damping ?? 0.99, (n) => {
-			bp.damping = n;
+			ensureBallPhysics(s).damping = n;
 			notify();
 		})
 		.num("bCoef", bp.bCoef ?? 0.5, (n) => {
-			bp.bCoef = n;
+			ensureBallPhysics(s).bCoef = n;
 			notify();
 		})
 		.color("color", bp.color, (h) => {
-			bp.color = h;
+			ensureBallPhysics(s).color = h;
 			notify();
 		})
 		.flags("cMask", bp.cMask, (f) => {
-			bp.cMask = f;
+			ensureBallPhysics(s).cMask = f;
 			notify();
 		})
 		.flags("cGroup", bp.cGroup, (f) => {
-			bp.cGroup = f;
+			ensureBallPhysics(s).cGroup = f;
 			notify();
 		});
 }
@@ -74,50 +76,65 @@ export function renderPlayerPhysicsSection(
 	s: StadiumObject,
 	notify: ChangeCallback,
 ): void {
-	s.playerPhysics ??= {};
-	const pp = s.playerPhysics;
+	const pp = s.playerPhysics ?? {};
 
 	new SectionBuilder("Player Physics", parent)
 		.num("radius", pp.radius ?? 15, (n) => {
-			pp.radius = n;
+			ensurePlayerPhysics(s).radius = n;
 			notify();
 		})
 		.num("invMass", pp.invMass ?? 0.5, (n) => {
-			pp.invMass = n;
+			ensurePlayerPhysics(s).invMass = n;
 			notify();
 		})
 		.num("damping", pp.damping ?? 0.96, (n) => {
-			pp.damping = n;
+			ensurePlayerPhysics(s).damping = n;
 			notify();
 		})
 		.num("bCoef", pp.bCoef ?? 0.5, (n) => {
-			pp.bCoef = n;
+			ensurePlayerPhysics(s).bCoef = n;
 			notify();
 		})
 		.num("accel", pp.acceleration ?? 0.1, (n) => {
-			pp.acceleration = n;
+			ensurePlayerPhysics(s).acceleration = n;
 			notify();
 		})
 		.num("kickAccel", pp.kickingAcceleration ?? 0.07, (n) => {
-			pp.kickingAcceleration = n;
+			ensurePlayerPhysics(s).kickingAcceleration = n;
 			notify();
 		})
 		.num("kickDamp", pp.kickingDamping ?? 0.7, (n) => {
-			pp.kickingDamping = n;
+			ensurePlayerPhysics(s).kickingDamping = n;
 			notify();
 		})
 		.num("kickStr", pp.kickStrength ?? 5, (n) => {
-			pp.kickStrength = n;
+			ensurePlayerPhysics(s).kickStrength = n;
 			notify();
 		})
 		.num("kickback", pp.kickback ?? 0, (n) => {
-			pp.kickback = n;
+			ensurePlayerPhysics(s).kickback = n;
 			notify();
 		})
 		.flags("cGroup", pp.cGroup, (f) => {
-			pp.cGroup = f;
+			ensurePlayerPhysics(s).cGroup = f;
 			notify();
 		});
+}
+
+function ensureBallPhysics(
+	s: StadiumObject,
+): Exclude<StadiumObject["ballPhysics"], "disc0" | undefined> {
+	if (!s.ballPhysics || s.ballPhysics === "disc0") {
+		s.ballPhysics = createDefaultBallPhysics();
+	}
+	return s.ballPhysics;
+}
+
+function ensurePlayerPhysics(
+	s: StadiumObject,
+): NonNullable<StadiumObject["playerPhysics"]> {
+	s.playerPhysics ??= {};
+	return s.playerPhysics;
 }
 
 function createDefaultBallPhysics(): Exclude<

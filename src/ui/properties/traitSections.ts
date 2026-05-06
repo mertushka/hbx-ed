@@ -255,6 +255,10 @@ function renderTraitColorInput(
 		const raw = txt.value.replace("#", "").toUpperCase();
 		if (raw === "") {
 			delete trait.color;
+			txt.value = "";
+			swatch.style.background = "";
+			picker.value = "#000000";
+			picker.removeAttribute("value");
 			notify();
 			return;
 		}

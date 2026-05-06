@@ -192,6 +192,8 @@ describe("stadiumSections", () => {
 		);
 
 		const ball = section("Ball Physics");
+		expect(s.ballPhysics).toBeUndefined();
+
 		const posX = controlIn<HTMLInputElement>(ball, "pos.x");
 		posX.value = "7";
 		posX.dispatchEvent(new Event("change"));
@@ -230,6 +232,8 @@ describe("stadiumSections", () => {
 		);
 
 		const player = section("Player Physics");
+		expect(s.playerPhysics).toBeUndefined();
+
 		const radius = controlIn<HTMLInputElement>(player, "radius");
 		radius.value = "21";
 		radius.dispatchEvent(new Event("change"));
@@ -286,8 +290,17 @@ describe("stadiumSections", () => {
 		color.value = "";
 		color.dispatchEvent(new Event("change"));
 
+		const swatch = rowIn(trait, "color").querySelector<HTMLElement>(
+			".prop-color-swatch",
+		);
+		const picker = rowIn(trait, "color").querySelector<HTMLInputElement>(
+			'input[type="color"]',
+		);
+
 		expect(s.traits?.wall).toEqual({ cMask: ["blue"] });
 		expect(visible.indeterminate).toBe(true);
+		expect(swatch?.style.background).toBe("");
+		expect(picker?.value).not.toBe("#654321");
 		expect(notify).toHaveBeenCalledTimes(7);
 	});
 

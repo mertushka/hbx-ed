@@ -137,7 +137,7 @@ function drawHockeyArc(
 ): void {
 	ctx.beginPath();
 	ctx.strokeStyle = color;
-	ctx.arc(0, 0, kickOffRadius, -Math.PI / 2, Math.PI / 2, anticlockwise);
+	ctx.arc(xLine, 0, kickOffRadius, -Math.PI / 2, Math.PI / 2, anticlockwise);
 	if (xLine !== 0) {
 		ctx.moveTo(xLine, -height);
 		ctx.lineTo(xLine, height);

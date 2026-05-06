@@ -13,20 +13,20 @@ import { computeArcCenter, getCurveF } from "../utils/math.ts";
 export function toPreviewCssColor(color: unknown): string | null {
 	if (color == null || color === "transparent" || color === -1) return null;
 	if (Array.isArray(color))
-		return `rgba(${color[0]},${color[1]},${color[2]},255)`;
+		return `rgba(${color[0]},${color[1]},${color[2]},1)`;
 	if (typeof color === "number") {
 		if (color === -1) return null;
 		const r = (color >> 16) & 0xff;
 		const g = (color >> 8) & 0xff;
 		const b = color & 0xff;
-		return `rgba(${r},${g},${b},255)`;
+		return `rgba(${r},${g},${b},1)`;
 	}
 	if (typeof color === "string") {
 		if (/^[0-9A-Fa-f]{6}$/.test(color)) {
 			const r = parseInt(color.slice(0, 2), 16);
 			const g = parseInt(color.slice(2, 4), 16);
 			const b = parseInt(color.slice(4, 6), 16);
-			return `rgba(${r},${g},${b},255)`;
+			return `rgba(${r},${g},${b},1)`;
 		}
 	}
 	return null;
@@ -46,7 +46,10 @@ export function drawPreviewSegment(
 	const v1 = verts[s.v1];
 	if (!v0 || !v1) return;
 
-	const color = toPreviewCssColor(s.color) ?? "rgba(0,0,0,255)";
+	const cssColor = toPreviewCssColor(s.color);
+	if (s.color !== undefined && cssColor === null) return;
+
+	const color = cssColor ?? "rgba(0,0,0,1)";
 	ctx.beginPath();
 	ctx.strokeStyle = color;
 
@@ -86,7 +89,7 @@ export function drawPreviewJoint(
 	const [x1, y1] = d1.pos ?? [0, 0];
 
 	ctx.beginPath();
-	ctx.strokeStyle = cssColor ?? "rgba(0,0,0,255)";
+	ctx.strokeStyle = cssColor ?? "rgba(0,0,0,1)";
 	ctx.moveTo(x0, y0);
 	ctx.lineTo(x1, y1);
 	ctx.stroke();
@@ -106,7 +109,7 @@ export function drawPreviewDisc(
 	const cssColor = toPreviewCssColor(d.color);
 
 	ctx.beginPath();
-	ctx.fillStyle = cssColor ?? "rgba(255,255,255,255)";
+	ctx.fillStyle = cssColor ?? "rgba(255,255,255,1)";
 	ctx.strokeStyle = "black";
 	ctx.arc(pos[0], pos[1], radius, 0, Math.PI * 2, false);
 
