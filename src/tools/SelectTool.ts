@@ -1,8 +1,13 @@
 import type { WorldPoint } from "../core/camera.ts";
 import { hitTest } from "../core/hitTest.ts";
-import type { Disc, Goal, ObjectType, Vec2, Vertex } from "../types/stadium.ts";
+import type { Disc, Goal, Vec2, Vertex } from "../types/stadium.ts";
 import { snapToGrid } from "../utils/math.ts";
 import type { AppContext } from "./context.ts";
+import {
+	applyMultiDrag,
+	createMultiDragOrigins,
+	type MultiDragOrigin,
+} from "./selectDrag.ts";
 import {
 	arcMidpoint,
 	findSnapVertex,
@@ -34,15 +39,7 @@ interface DragState {
 	originSpawn?: [number, number];
 	curveV0?: { x: number; y: number };
 	curveV1?: { x: number; y: number };
-	// For multi-drag: original positions of all selected objects.
-	// pos = primary position (vertex xy, disc pos, goal p0).
-	// pos2 = secondary position (goal p1 only).
-	multiOrigins?: Array<{
-		type: ObjectType;
-		index: number;
-		pos: [number, number];
-		pos2?: [number, number];
-	}>;
+	multiOrigins?: MultiDragOrigin[];
 }
 
 // ── SelectTool ────────────────────────────────────────────────────────────────
@@ -153,39 +150,7 @@ export class SelectTool implements Tool {
 			hit &&
 			ms.items.some((s) => s.type === hit.type && s.index === hit.index)
 		) {
-			// Capture all current positions for delta-based drag
-			const origins = ms.items.flatMap(({ type, index }) => {
-				if (type === "vertex") {
-					const v = stadium.vertexes[index];
-					return v
-						? [{ type, index, pos: [v.x, v.y] as [number, number] }]
-						: [];
-				} else if (type === "disc") {
-					const d = stadium.discs[index];
-					return d
-						? [{ type, index, pos: [...(d.pos ?? [0, 0])] as [number, number] }]
-						: [];
-				} else if (type === "goal") {
-					const g = stadium.goals[index];
-					// Store BOTH p0 (in pos) and p1 (in pos2) so the whole goal translates.
-					return g
-						? [
-								{
-									type,
-									index,
-									pos: [...(g.p0 ?? [0, 0])] as [number, number],
-									pos2: [...(g.p1 ?? [0, 0])] as [number, number],
-								},
-							]
-						: [];
-				}
-				return [] as Array<{
-					type: ObjectType;
-					index: number;
-					pos: [number, number];
-					pos2?: [number, number];
-				}>;
-			});
+			const origins = createMultiDragOrigins(stadium, ms.items);
 			this.drag = {
 				startWorld: pos,
 				kind: "vertex",
@@ -260,27 +225,7 @@ export class SelectTool implements Tool {
 			);
 			const dx = snapped.x - this.drag.startWorld.x;
 			const dy = snapped.y - this.drag.startWorld.y;
-			for (const { type, index, pos: orig, pos2 } of this.drag.multiOrigins) {
-				if (type === "vertex") {
-					const v = stadium.vertexes[index];
-					if (v) {
-						v.x = orig[0] + dx;
-						v.y = orig[1] + dy;
-					}
-				} else if (type === "disc") {
-					const d = stadium.discs[index];
-					if (d) d.pos = [orig[0] + dx, orig[1] + dy];
-				} else if (type === "goal") {
-					const g = stadium.goals[index];
-					if (g) {
-						g.p0 = [orig[0] + dx, orig[1] + dy];
-						// pos2 holds the original p1 — translate by the same delta
-						g.p1 = pos2
-							? [pos2[0] + dx, pos2[1] + dy]
-							: [orig[0] + dx, orig[1] + dy];
-					}
-				}
-			}
+			applyMultiDrag(stadium, this.drag.multiOrigins, dx, dy);
 			this.ctx.refresh();
 			return;
 		}
