@@ -4,19 +4,19 @@ import type { Disc, Goal, Vec2, Vertex } from "../types/stadium.ts";
 import { snapToGrid } from "../utils/math.ts";
 import type { AppContext } from "./context.ts";
 import {
+	applyCurveHandleDrag,
+	type CurveHandleDragOrigin,
+	findCurveHandleDragOrigin,
+} from "./selectCurve.ts";
+import {
 	applyMultiDrag,
 	createMultiDragOrigins,
 	type MultiDragOrigin,
 } from "./selectDrag.ts";
-import {
-	arcMidpoint,
-	findSnapVertex,
-	objectsInRect,
-} from "./selectGeometry.ts";
+import { findSnapVertex, objectsInRect } from "./selectGeometry.ts";
 import type { Tool } from "./types.ts";
 
 const SPAWN_SNAP_PX = 10;
-const CURVE_HANDLE_PX = 12;
 
 // ── Drag state ───────────────────────────────────────────────────────────────
 
@@ -37,8 +37,7 @@ interface DragState {
 	originDisc?: [number, number];
 	originGoal?: { p0: [number, number]; p1: [number, number] };
 	originSpawn?: [number, number];
-	curveV0?: { x: number; y: number };
-	curveV1?: { x: number; y: number };
+	curveOrigin?: CurveHandleDragOrigin;
 	multiOrigins?: MultiDragOrigin[];
 }
 
@@ -87,31 +86,20 @@ export class SelectTool implements Tool {
 		}
 
 		// ── 2. Curve handle on the selected segment ───────────────────────────────
-		const sel = this.ctx.getSelection();
-		if (sel?.type === "segment") {
-			const seg = stadium.segments[sel.index];
-			if (seg) {
-				const v0 = stadium.vertexes[seg.v0];
-				const v1 = stadium.vertexes[seg.v1];
-				if (v0 && v1) {
-					const handleR = CURVE_HANDLE_PX / zoom;
-					const mp = arcMidpoint(seg, stadium.vertexes);
-					// For curved segments: check arc midpoint (diamond handle).
-					// For straight segments: check chord midpoint (dot affordance).
-					const hx = mp ? mp.x : (v0.x + v1.x) / 2;
-					const hy = mp ? mp.y : (v0.y + v1.y) / 2;
-					if (Math.hypot(hx - pos.x, hy - pos.y) < handleR) {
-						this.drag = {
-							startWorld: pos,
-							kind: "curve-handle",
-							index: sel.index,
-							curveV0: { x: v0.x, y: v0.y },
-							curveV1: { x: v1.x, y: v1.y },
-						};
-						return;
-					}
-				}
-			}
+		const curveOrigin = findCurveHandleDragOrigin(
+			stadium,
+			this.ctx.getSelection(),
+			pos,
+			zoom,
+		);
+		if (curveOrigin) {
+			this.drag = {
+				startWorld: pos,
+				kind: "curve-handle",
+				index: curveOrigin.index,
+				curveOrigin,
+			};
+			return;
 		}
 
 		// ── 3. Multi-select: Shift+click existing item ────────────────────────────
@@ -301,37 +289,13 @@ export class SelectTool implements Tool {
 					this.drag.originSpawn[1] + dy,
 				];
 			}
-		} else if (
-			this.drag.kind === "curve-handle" &&
-			this.drag.curveV0 &&
-			this.drag.curveV1
-		) {
-			const seg = stadium.segments[this.drag.index];
+		} else if (this.drag.kind === "curve-handle" && this.drag.curveOrigin) {
+			const seg = stadium.segments[this.drag.curveOrigin.index];
 			if (!seg) return;
-			const v0 = this.drag.curveV0,
-				v1 = this.drag.curveV1;
-			const chordLen = Math.hypot(v1.x - v0.x, v1.y - v0.y);
-			if (chordLen < 0.001) return;
-			const L = chordLen / 2;
-			const cmx = (v0.x + v1.x) / 2,
-				cmy = (v0.y + v1.y) / 2;
-			// Left-hand perpendicular of v0→v1
-			const perpX = -(v1.y - v0.y) / chordLen;
-			const perpY = (v1.x - v0.x) / chordLen;
-			const d_proj = (pos.x - cmx) * perpX + (pos.y - cmy) * perpY;
-			const absD = Math.abs(d_proj);
-			if (absD < 0.5) {
-				seg.curve = 0;
-				delete seg.curveF;
+			if (applyCurveHandleDrag(seg, this.drag.curveOrigin, pos)) {
 				this.ctx.refresh();
-				return;
 			}
-			// Arc geometry: r = (L² + d²) / (2|d|), θ = 2·asin(L/r)
-			const r = (L * L + absD * absD) / (2 * absD);
-			const theta = 2 * Math.asin(Math.min(1, L / r));
-			// d_proj < 0 → arc bows on right-hand side → positive curve (matches game convention)
-			seg.curve = ((d_proj < 0 ? 1 : -1) * theta * 180) / Math.PI;
-			delete seg.curveF;
+			return;
 		}
 
 		this.ctx.refresh();
