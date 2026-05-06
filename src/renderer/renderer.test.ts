@@ -190,4 +190,17 @@ describe("PreviewRenderer", () => {
 		expect(ctx.arc).toHaveBeenCalled();
 		expect(ctx.stroke).toHaveBeenCalled();
 	});
+
+	it("restores canvas state if preview rendering throws", () => {
+		const renderer = new PreviewRenderer(canvas());
+		const ctx = ctxOf(renderer);
+		vi.mocked(ctx.translate).mockImplementationOnce(() => {
+			throw new Error("preview transform failed");
+		});
+
+		expect(() => renderer.render(stadium(), camera())).toThrow(
+			"preview transform failed",
+		);
+		expect(ctx.restore).toHaveBeenCalledTimes(1);
+	});
 });
