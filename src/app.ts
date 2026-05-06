@@ -7,6 +7,7 @@ import { bindKeyboard as bindKeyboardShortcuts } from "./app/keyboardBindings.ts
 import { NewStadiumController } from "./app/newStadiumController.ts";
 import { buildObjectContextMenuItems } from "./app/objectContextMenu.ts";
 import { PreviewController } from "./app/previewController.ts";
+import { SelectionController } from "./app/selectionController.ts";
 import { createStadiumDownload } from "./app/stadiumDownload.ts";
 import { readStadiumFile } from "./app/stadiumFile.ts";
 import {
@@ -54,6 +55,7 @@ export class App {
 	// ── Subsystems ─────────────────────────────────────────────────────────────
 	private readonly renderer: Renderer;
 	private readonly preview: PreviewController;
+	private readonly selectionController: SelectionController;
 
 	private readonly objectTree: ObjectTree;
 	private readonly propertiesPanel: PropertiesPanel;
@@ -137,8 +139,6 @@ export class App {
 			loadStadium: (stadium) => this.loadStadium(stadium),
 		});
 
-		const ctx = this.buildAppContext();
-
 		this.objectTree = new ObjectTree(
 			(sel) => this.select(sel),
 			(e, sel) => this.showObjectContextMenu(e, sel),
@@ -165,6 +165,18 @@ export class App {
 				this.propertiesPanel.render(this.stadium, this.selection);
 			}
 		});
+
+		this.selectionController = new SelectionController({
+			editorState: this.editorState,
+			renderer: this.renderer,
+			objectTree: this.objectTree,
+			propertiesPanel: this.propertiesPanel,
+			statusBar: this.statusBar,
+			getStadium: () => this.stadium,
+			render: () => this.render(),
+		});
+
+		const ctx = this.buildAppContext();
 
 		this.tools = new Map<string, Tool>([
 			["select", new SelectTool(ctx, () => this.camera.zoom)],
@@ -201,16 +213,7 @@ export class App {
 			getSelection: () => this.selection,
 			setSelection: (sel) => this.select(sel),
 			getMultiSelection: () => this.multiSelection,
-			setMultiSelection: (ms) => {
-				this.editorState.setMultiSelection(ms);
-				this.renderer.multiSelection = ms;
-				// Update status bar
-				const count = ms?.items.length ?? 0;
-				if (count > 1) {
-					this.getEl("#status-sel").textContent = `${count} objects selected`;
-				}
-				this.render();
-			},
+			setMultiSelection: (ms) => this.selectionController.setMultiSelection(ms),
 			saveHistory: () => {
 				this.saveMutation();
 			},
@@ -259,25 +262,7 @@ export class App {
 	// ── Selection ──────────────────────────────────────────────────────────────
 
 	private select(sel: Selection | null): void {
-		this.editorState.select(sel);
-		if (sel !== null) {
-			this.renderer.multiSelection = null;
-		}
-		this.objectTree.render(this.stadium, sel, this.multiSelection);
-
-		if (!sel || !this.stadium) {
-			this.propertiesPanel.clear();
-			this.statusBar.setSelection(
-				this.multiSelection
-					? `${this.multiSelection.items.length} objects selected`
-					: "nothing selected",
-			);
-		} else {
-			this.propertiesPanel.render(this.stadium, sel);
-			this.statusBar.setSelection(`${sel.type} #${sel.index} selected`);
-		}
-
-		this.render();
+		this.selectionController.select(sel);
 	}
 
 	private deleteSelected(): void {
@@ -467,7 +452,7 @@ export class App {
 	// ── Context menu ───────────────────────────────────────────────────────────
 
 	private showObjectContextMenu(e: MouseEvent, sel: Selection): void {
-		const multiSelectionCount = this.multiSelectionContains(sel)
+		const multiSelectionCount = this.selectionController.contains(sel)
 			? (this.multiSelection?.items.length ?? 0)
 			: 0;
 		if (multiSelectionCount === 0) this.select(sel);
@@ -488,15 +473,6 @@ export class App {
 		if (!items) return;
 
 		this.contextMenu.show(e.clientX, e.clientY, items);
-	}
-
-	private multiSelectionContains(selection: Selection): boolean {
-		return (
-			this.multiSelection?.items.some(
-				(item) =>
-					item.type === selection.type && item.index === selection.index,
-			) ?? false
-		);
 	}
 
 	// ── Toolbar & keyboard ─────────────────────────────────────────────────────
@@ -579,14 +555,7 @@ export class App {
 			},
 			isPreviewOpen: () => this.preview.isOpen,
 			closePreview: () => this.preview.close(),
-			clearMultiSelection: () => {
-				if (!this.editorState.clearMultiSelection()) return false;
-				this.renderer.multiSelection = null;
-				this.statusBar.setSelection("nothing selected");
-				this.objectTree.render(this.stadium, this.selection, null);
-				this.render();
-				return true;
-			},
+			clearMultiSelection: () => this.selectionController.clearMultiSelection(),
 			clearSelection: () => {
 				this.activeTool.onDeactivate?.();
 				this.select(null);
