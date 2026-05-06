@@ -1,4 +1,4 @@
-import { parse } from "json5";
+import { parse, stringify } from "json5";
 
 import type { StadiumObject } from "../types/stadium.ts";
 
@@ -12,7 +12,11 @@ export function parseHbs(text: string): StadiumObject {
 }
 
 export function serializeHbs(stadium: StadiumObject): string {
-	return JSON.stringify(stadium, stripExportOnlyFields, 2);
+	return stringify(stadium, {
+		replacer: stripExportOnlyFields,
+		space: 2,
+		quote: '"',
+	});
 }
 
 function stripExportOnlyFields(key: string, value: unknown): unknown {

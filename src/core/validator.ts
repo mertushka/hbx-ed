@@ -1,4 +1,4 @@
-import type { StadiumObject } from "../types/stadium.ts";
+import type { Segment, StadiumObject } from "../types/stadium.ts";
 
 export type Severity = "error" | "warn";
 
@@ -44,7 +44,7 @@ export function validateStadium(s: StadiumObject): ValidationIssue[] {
 			const ov0 = other.v0 ?? -1,
 				ov1 = other.v1 ?? -1;
 			if ((v0 === ov0 && v1 === ov1) || (v0 === ov1 && v1 === ov0)) {
-				if ((seg.curve ?? 0) !== 0 || (other.curve ?? 0) !== 0) return;
+				if (isCurvedSegment(seg) || isCurvedSegment(other)) continue;
 				issues.push({
 					severity: "warn",
 					message: `seg${i} and seg${j} share the same vertices`,
@@ -132,4 +132,8 @@ export function validateStadium(s: StadiumObject): ValidationIssue[] {
 	});
 
 	return issues;
+}
+
+function isCurvedSegment(segment: Segment): boolean {
+	return (segment.curve ?? 0) !== 0 || (segment.curveF ?? 0) !== 0;
 }

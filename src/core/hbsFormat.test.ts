@@ -28,12 +28,13 @@ describe("hbsFormat", () => {
 		expect(() => parseHbs("{")).toThrow("HBS parse error:");
 	});
 
-	it("serializes stadiums while stripping curveF", () => {
+	it("serializes JSON5 stadiums while preserving Infinity and stripping curveF", () => {
 		const json = serializeHbs({
 			name: "Save Test",
 			width: 100,
 			height: 50,
 			traits: {},
+			bg: { type: "grass", width: Infinity },
 			vertexes: [
 				{ x: 0, y: 0 },
 				{ x: 1, y: 1 },
@@ -45,7 +46,40 @@ describe("hbsFormat", () => {
 			joints: [],
 		});
 
-		expect(json).toContain('"curve": 90');
+		expect(json).toMatchInlineSnapshot(`
+			"{
+			  name: "Save Test",
+			  width: 100,
+			  height: 50,
+			  traits: {},
+			  bg: {
+			    type: "grass",
+			    width: Infinity,
+			  },
+			  vertexes: [
+			    {
+			      x: 0,
+			      y: 0,
+			    },
+			    {
+			      x: 1,
+			      y: 1,
+			    },
+			  ],
+			  segments: [
+			    {
+			      v0: 0,
+			      v1: 1,
+			      curve: 90,
+			    },
+			  ],
+			  goals: [],
+			  discs: [],
+			  planes: [],
+			  joints: [],
+			}"
+		`);
+		expect(parseHbs(json).bg?.width).toBe(Infinity);
 		expect(json).not.toContain("curveF");
 	});
 });

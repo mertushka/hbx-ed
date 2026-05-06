@@ -180,7 +180,7 @@ describe("stadiumSections", () => {
 
 	it("edits custom ball physics fields, color, and flags", () => {
 		const s = stadium();
-		s.ballPhysics = undefined;
+		delete s.ballPhysics;
 		const notify = vi.fn();
 		const rebuild = vi.fn();
 
@@ -220,7 +220,7 @@ describe("stadiumSections", () => {
 
 	it("edits player physics fields and initializes missing playerPhysics", () => {
 		const s = stadium();
-		s.playerPhysics = undefined;
+		delete s.playerPhysics;
 		const notify = vi.fn();
 
 		renderPlayerPhysicsSection(
