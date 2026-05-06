@@ -33,4 +33,21 @@ describe("createStadiumDownload", () => {
 		expect(download.contents).not.toContain("curveF");
 		expect(parseHbs(download.contents).bg?.width).toBe(Infinity);
 	});
+
+	it("sanitizes unsafe stadium names for download filenames", () => {
+		const unsafe = stadium();
+		unsafe.name = " Classic / Big: Easy? ";
+
+		expect(createStadiumDownload(unsafe).filename).toBe("Classic_Big_Easy.hbs");
+
+		const hidden = stadium();
+		hidden.name = ".env";
+
+		expect(createStadiumDownload(hidden).filename).toBe("download_env.hbs");
+
+		const empty = stadium();
+		empty.name = "***";
+
+		expect(createStadiumDownload(empty).filename).toBe("stadium.hbs");
+	});
 });

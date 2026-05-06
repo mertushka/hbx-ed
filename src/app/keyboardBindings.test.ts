@@ -11,6 +11,9 @@ function setup(overrides: Partial<Parameters<typeof bindKeyboard>[0]> = {}) {
 		<input id="editor-input" />
 		<select id="editor-select"></select>
 		<textarea id="editor-textarea"></textarea>
+		<div id="editor-contenteditable" contenteditable="true">
+			<span id="editor-contenteditable-child"></span>
+		</div>
 	`;
 	const actions = {
 		setShiftHeld: vi.fn(),
@@ -151,6 +154,40 @@ describe("bindKeyboard", () => {
 
 		expect(actions.setTool).not.toHaveBeenCalled();
 		expect(actions.deleteSelected).not.toHaveBeenCalled();
+	});
+
+	it("ignores editor shortcuts from contenteditable targets", () => {
+		const { actions, doc } = setup();
+		const editableChild = doc.getElementById(
+			"editor-contenteditable-child",
+		) as HTMLElement;
+
+		editableChild.dispatchEvent(
+			new KeyboardEvent("keydown", {
+				key: "h",
+				bubbles: true,
+				cancelable: true,
+			}),
+		);
+		editableChild.dispatchEvent(
+			new KeyboardEvent("keydown", {
+				key: "Delete",
+				bubbles: true,
+				cancelable: true,
+			}),
+		);
+		editableChild.dispatchEvent(
+			new KeyboardEvent("keydown", {
+				key: "z",
+				ctrlKey: true,
+				bubbles: true,
+				cancelable: true,
+			}),
+		);
+
+		expect(actions.setTool).not.toHaveBeenCalled();
+		expect(actions.deleteSelected).not.toHaveBeenCalled();
+		expect(actions.undo).not.toHaveBeenCalled();
 	});
 
 	it("tracks shift state and closes modal layers on escape", () => {

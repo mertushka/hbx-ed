@@ -81,8 +81,8 @@ describe("Renderer", () => {
 		expect(renderer.height).toBe(200);
 		expect(ctx.fillRect).toHaveBeenCalledWith(0, 0, 300, 200);
 		expect(ctx.setTransform).toHaveBeenCalledWith(1, 0, 0, 1, 0, 0);
-		expect(ctx.save).toHaveBeenCalledTimes(1);
-		expect(ctx.restore).toHaveBeenCalledTimes(1);
+		expect(ctx.save).toHaveBeenCalledTimes(2);
+		expect(ctx.restore).toHaveBeenCalledTimes(2);
 	});
 
 	it("draws stadium primitives and editor overlays", () => {
@@ -127,6 +127,19 @@ describe("Renderer", () => {
 		const ctx = ctxOf(renderer);
 		expect(ctx.fillText).not.toHaveBeenCalledWith("0", -20, -20);
 		expect(ctx.fillText).not.toHaveBeenCalledWith("v0", -25, -5);
+	});
+
+	it("restores canvas state if transformed rendering throws", () => {
+		const renderer = new Renderer(canvas());
+		const ctx = ctxOf(renderer);
+		vi.mocked(ctx.translate).mockImplementationOnce(() => {
+			throw new Error("transform failed");
+		});
+
+		expect(() => renderer.render(stadium(), camera(), null)).toThrow(
+			"transform failed",
+		);
+		expect(ctx.restore).toHaveBeenCalledTimes(3);
 	});
 });
 

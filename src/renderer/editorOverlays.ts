@@ -112,6 +112,18 @@ function drawMultiSelection(
 			ctx.strokeStyle = COL_MULTI_SELECT;
 			ctx.lineWidth = 4 / zoom;
 			ctx.stroke();
+		} else if (type === "segment") {
+			const seg = stadium.segments[index];
+			if (!seg) return;
+			const v0 = stadium.vertexes[seg.v0];
+			const v1 = stadium.vertexes[seg.v1];
+			if (!v0 || !v1) return;
+			ctx.beginPath();
+			ctx.moveTo(v0.x, v0.y);
+			ctx.lineTo(v1.x, v1.y);
+			ctx.strokeStyle = COL_MULTI_SELECT;
+			ctx.lineWidth = 4 / zoom;
+			ctx.stroke();
 		}
 	});
 }
@@ -175,7 +187,7 @@ function drawSpawnPoints(
 	const r = 8 / zoom;
 	const fontSize = Math.max(7, 9 / zoom);
 	ctx.save();
-	ctx.font = `bold ${fontSize}px "IBM Plex Mono", monospace`;
+	ctx.font = `bold ${fontSize / zoom}px "IBM Plex Mono", monospace`;
 	ctx.textAlign = "center";
 	ctx.textBaseline = "middle";
 

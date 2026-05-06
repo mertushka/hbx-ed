@@ -100,85 +100,96 @@ export class Renderer {
 		ctx.fillStyle = COL_CANVAS_BG;
 		ctx.fillRect(0, 0, W, H);
 
-		drawEditorGrid(ctx, camera, W, H);
+		ctx.save();
+		try {
+			drawEditorGrid(ctx, camera, W, H);
+		} finally {
+			ctx.restore();
+		}
 
 		if (!stadium) return;
 		const patterns = this.textures.getPatterns();
 
 		ctx.save();
-		ctx.translate(W / 2, H / 2);
-		ctx.scale(camera.zoom, camera.zoom);
-		ctx.translate(-camera.x, -camera.y);
+		try {
+			ctx.translate(W / 2, H / 2);
+			ctx.scale(camera.zoom, camera.zoom);
+			ctx.translate(-camera.x, -camera.y);
 
-		if (stadium.bg) {
-			drawEditorBackground(ctx, stadium.bg, camera, patterns, {
-				width: this.canvas.width,
-				height: this.canvas.height,
+			if (stadium.bg) {
+				drawEditorBackground(ctx, stadium.bg, camera, patterns, {
+					width: this.canvas.width,
+					height: this.canvas.height,
+				});
+			}
+
+			stadium.planes.forEach((plane, i) => {
+				this.drawPlane(plane, isSelected(selection, "plane", i), camera);
 			});
+
+			stadium.goals.forEach((goal, i) => {
+				this.drawGoal(goal, isSelected(selection, "goal", i), camera.zoom);
+			});
+
+			stadium.joints.forEach((joint, i) => {
+				this.drawJoint(
+					joint,
+					stadium.discs,
+					isSelected(selection, "joint", i),
+					camera.zoom,
+				);
+			});
+
+			stadium.segments.forEach((seg, i) => {
+				this.drawSegment(
+					seg,
+					stadium.vertexes,
+					stadium.traits,
+					isSelected(selection, "segment", i),
+					camera.zoom,
+				);
+			});
+
+			stadium.discs.forEach((disc, i) => {
+				this.drawDisc(
+					disc,
+					stadium.traits,
+					isSelected(selection, "disc", i),
+					camera.zoom,
+				);
+			});
+
+			stadium.vertexes.forEach((vertex, i) => {
+				this.drawVertex(
+					vertex,
+					isSelected(selection, "vertex", i),
+					camera.zoom,
+				);
+			});
+
+			// Curve handle — drawn on the selected segment's arc midpoint
+			if (selection?.type === "segment") {
+				const seg = stadium.segments[selection.index];
+				if (seg) this.drawCurveHandle(seg, stadium.vertexes, camera.zoom);
+			}
+
+			// Editor overlays
+			drawEditorOverlays(
+				ctx,
+				stadium,
+				{
+					showVertexLabels: this.showVertexLabels,
+					showSpawnPoints: this.showSpawnPoints,
+					segPreview: this.segPreview,
+					multiSelection: this.multiSelection,
+					boxSelect: this.boxSelect,
+					vertexSnapTarget: this.vertexSnapTarget,
+				},
+				camera.zoom,
+			);
+		} finally {
+			ctx.restore();
 		}
-
-		stadium.planes.forEach((plane, i) => {
-			this.drawPlane(plane, isSelected(selection, "plane", i), camera);
-		});
-
-		stadium.goals.forEach((goal, i) => {
-			this.drawGoal(goal, isSelected(selection, "goal", i), camera.zoom);
-		});
-
-		stadium.joints.forEach((joint, i) => {
-			this.drawJoint(
-				joint,
-				stadium.discs,
-				isSelected(selection, "joint", i),
-				camera.zoom,
-			);
-		});
-
-		stadium.segments.forEach((seg, i) => {
-			this.drawSegment(
-				seg,
-				stadium.vertexes,
-				stadium.traits,
-				isSelected(selection, "segment", i),
-				camera.zoom,
-			);
-		});
-
-		stadium.discs.forEach((disc, i) => {
-			this.drawDisc(
-				disc,
-				stadium.traits,
-				isSelected(selection, "disc", i),
-				camera.zoom,
-			);
-		});
-
-		stadium.vertexes.forEach((vertex, i) => {
-			this.drawVertex(vertex, isSelected(selection, "vertex", i), camera.zoom);
-		});
-
-		// Curve handle — drawn on the selected segment's arc midpoint
-		if (selection?.type === "segment") {
-			const seg = stadium.segments[selection.index];
-			if (seg) this.drawCurveHandle(seg, stadium.vertexes, camera.zoom);
-		}
-
-		// Editor overlays
-		drawEditorOverlays(
-			ctx,
-			stadium,
-			{
-				showVertexLabels: this.showVertexLabels,
-				showSpawnPoints: this.showSpawnPoints,
-				segPreview: this.segPreview,
-				multiSelection: this.multiSelection,
-				boxSelect: this.boxSelect,
-				vertexSnapTarget: this.vertexSnapTarget,
-			},
-			camera.zoom,
-		);
-
-		ctx.restore();
 	}
 
 	// ── Private draw methods ────────────────────────────────────────────────────

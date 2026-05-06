@@ -211,9 +211,17 @@ function handleEscape({
 
 function isEditingTarget(target: EventTarget | null): boolean {
 	if (!(target instanceof HTMLElement)) return false;
+	const contentEditableTarget = target.closest("[contenteditable]");
+	const contentEditable =
+		contentEditableTarget?.getAttribute("contenteditable");
+
 	return (
 		target.tagName === "INPUT" ||
 		target.tagName === "SELECT" ||
-		target.tagName === "TEXTAREA"
+		target.tagName === "TEXTAREA" ||
+		target.isContentEditable ||
+		(contentEditable !== undefined &&
+			contentEditable !== null &&
+			contentEditable.toLowerCase() !== "false")
 	);
 }

@@ -32,14 +32,14 @@ export class History<T> {
 		if (!this.canUndo) return null;
 		this.cursor--;
 		const snapshot = this.snapshots[this.cursor];
-		return snapshot ? cloneSnapshot(snapshot) : null;
+		return snapshot !== undefined ? cloneSnapshot(snapshot) : null;
 	}
 
 	redo(): T | null {
 		if (!this.canRedo) return null;
 		this.cursor++;
 		const snapshot = this.snapshots[this.cursor];
-		return snapshot ? cloneSnapshot(snapshot) : null;
+		return snapshot !== undefined ? cloneSnapshot(snapshot) : null;
 	}
 
 	clear(): void {

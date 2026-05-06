@@ -36,6 +36,21 @@ describe("History", () => {
 		expect(history.undo()).toEqual({ value: Infinity });
 	});
 
+	it("returns stored falsy snapshots from undo and redo", () => {
+		const numbers = new History<number>();
+		numbers.save(0);
+		numbers.save(1);
+
+		expect(numbers.undo()).toBe(0);
+
+		const booleans = new History<boolean>();
+		booleans.save(true);
+		booleans.save(false);
+		booleans.undo();
+
+		expect(booleans.redo()).toBe(false);
+	});
+
 	it("keeps the newest 64 snapshots", () => {
 		const history = new History<{ value: number }>();
 		for (let i = 0; i < 70; i++) history.save({ value: i });
