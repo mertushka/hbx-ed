@@ -60,6 +60,24 @@ describe("validateStadium", () => {
 		).toBe(false);
 	});
 
+	it("does not warn for duplicate curveF segments but still reports other issues", () => {
+		const issues = validateStadium(
+			baseStadium({
+				segments: [
+					{ v0: 0, v1: 1, curveF: 1, trait: "missing" },
+					{ v0: 1, v1: 0 },
+				],
+			}),
+		);
+
+		expect(
+			issues.some((i) => i.message.includes("share the same vertices")),
+		).toBe(false);
+		expect(issues.some((i) => i.message.includes('trait "missing"'))).toBe(
+			true,
+		);
+	});
+
 	it("reports undefined traits and degenerate objects", () => {
 		const issues = validateStadium(
 			baseStadium({

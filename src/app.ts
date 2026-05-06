@@ -1,19 +1,20 @@
 import "./styles/main.css";
 
 import { bindCanvasEvents as bindCanvasEventHandlers } from "./app/canvasBindings.ts";
+import { EditorState } from "./app/editorState.ts";
 import { bindFileIO as bindFileInput } from "./app/fileBindings.ts";
 import { bindKeyboard as bindKeyboardShortcuts } from "./app/keyboardBindings.ts";
 import { NewStadiumController } from "./app/newStadiumController.ts";
 import { buildObjectContextMenuItems } from "./app/objectContextMenu.ts";
 import { PreviewController } from "./app/previewController.ts";
+import { createStadiumDownload } from "./app/stadiumDownload.ts";
+import { readStadiumFile } from "./app/stadiumFile.ts";
 import {
 	bindToolbarButtons as bindToolbarButtonControls,
 	syncOverlayToggleButtons,
 } from "./app/toolbarBindings.ts";
 import { renderValidationPanel } from "./app/validationPanel.ts";
 import { Camera } from "./core/camera.ts";
-import { parseHbs, serializeHbs } from "./core/hbsFormat.ts";
-import { History } from "./core/history.ts";
 import {
 	type ClipboardEntry,
 	cloneForClipboard,
@@ -47,11 +48,8 @@ import { Toast } from "./ui/Toast.ts";
 
 export class App {
 	// ── Core state ─────────────────────────────────────────────────────────────
-	private stadium: StadiumObject | null = null;
-	private selection: Selection | null = null;
-	private multiSelection: MultiSelection | null = null;
+	private readonly editorState = new EditorState();
 	private readonly camera = new Camera();
-	private readonly history = new History<StadiumObject>();
 
 	// ── Subsystems ─────────────────────────────────────────────────────────────
 	private readonly renderer: Renderer;
@@ -78,6 +76,34 @@ export class App {
 
 	// Clipboard for copy/paste
 	private clipboard: ClipboardEntry | null = null;
+
+	private get stadium(): StadiumObject | null {
+		return this.editorState.stadium;
+	}
+
+	private set stadium(stadium: StadiumObject | null) {
+		this.editorState.stadium = stadium;
+	}
+
+	private get selection(): Selection | null {
+		return this.editorState.selection;
+	}
+
+	private set selection(selection: Selection | null) {
+		this.editorState.selection = selection;
+	}
+
+	private get multiSelection(): MultiSelection | null {
+		return this.editorState.multiSelection;
+	}
+
+	private set multiSelection(multiSelection: MultiSelection | null) {
+		this.editorState.multiSelection = multiSelection;
+	}
+
+	private get history(): EditorState["history"] {
+		return this.editorState.history;
+	}
 
 	constructor() {
 		this.canvas = this.getEl<HTMLCanvasElement>("#main-canvas");
@@ -176,7 +202,7 @@ export class App {
 			setSelection: (sel) => this.select(sel),
 			getMultiSelection: () => this.multiSelection,
 			setMultiSelection: (ms) => {
-				this.multiSelection = ms;
+				this.editorState.setMultiSelection(ms);
 				this.renderer.multiSelection = ms;
 				// Update status bar
 				const count = ms?.items.length ?? 0;
@@ -200,10 +226,8 @@ export class App {
 
 	private loadStadium(data: StadiumObject): void {
 		const normalized = normalizeStadium(data);
-		this.stadium = normalized;
-		this.selection = null;
-		this.history.clear();
-		this.history.save(normalized);
+		this.editorState.load(normalized);
+		this.renderer.multiSelection = null;
 		this.dirty = false;
 
 		this.getEl("#stadium-name-display").textContent = normalized.name;
@@ -221,11 +245,11 @@ export class App {
 			return;
 		}
 
-		const json = serializeHbs(this.stadium);
-		const blob = new Blob([json], { type: "application/json" });
+		const download = createStadiumDownload(this.stadium);
+		const blob = new Blob([download.contents], { type: download.mimeType });
 		const a = document.createElement("a");
 		a.href = URL.createObjectURL(blob);
-		a.download = `${this.stadium.name.replace(/\s+/g, "_")}.hbs`;
+		a.download = download.filename;
 		a.click();
 		URL.revokeObjectURL(a.href);
 		this.markClean();
@@ -235,9 +259,8 @@ export class App {
 	// ── Selection ──────────────────────────────────────────────────────────────
 
 	private select(sel: Selection | null): void {
-		this.selection = sel;
+		this.editorState.select(sel);
 		if (sel !== null) {
-			this.multiSelection = null;
 			this.renderer.multiSelection = null;
 		}
 		this.objectTree.render(this.stadium, sel, this.multiSelection);
@@ -327,8 +350,7 @@ export class App {
 	}
 
 	private saveMutation(): void {
-		if (!this.stadium) return;
-		this.history.save(this.stadium);
+		if (!this.editorState.saveMutation()) return;
 		this.runValidation();
 		this.markDirty();
 	}
@@ -360,10 +382,8 @@ export class App {
 	// ── Undo / Redo ────────────────────────────────────────────────────────────
 
 	private undo(): void {
-		const prev = this.history.undo();
+		const prev = this.editorState.undo();
 		if (!prev) return;
-		this.stadium = prev;
-		this.multiSelection = null;
 		this.renderer.multiSelection = null;
 		this.select(null);
 		this.runValidation();
@@ -372,10 +392,8 @@ export class App {
 	}
 
 	private redo(): void {
-		const next = this.history.redo();
+		const next = this.editorState.redo();
 		if (!next) return;
-		this.stadium = next;
-		this.multiSelection = null;
 		this.renderer.multiSelection = null;
 		this.select(null);
 		this.runValidation();
@@ -562,8 +580,7 @@ export class App {
 			isPreviewOpen: () => this.preview.isOpen,
 			closePreview: () => this.preview.close(),
 			clearMultiSelection: () => {
-				if (!this.multiSelection) return false;
-				this.multiSelection = null;
+				if (!this.editorState.clearMultiSelection()) return false;
 				this.renderer.multiSelection = null;
 				this.statusBar.setSelection("nothing selected");
 				this.objectTree.render(this.stadium, this.selection, null);
@@ -589,18 +606,10 @@ export class App {
 	}
 
 	private readFile(file: File): void {
-		const reader = new FileReader();
-		reader.addEventListener("load", () => {
-			try {
-				const raw = parseHbs(reader.result as string);
-				this.loadStadium(raw as StadiumObject);
-			} catch (err) {
-				this.toast.show(
-					`Error: ${err instanceof Error ? err.message : String(err)}`,
-				);
-			}
+		readStadiumFile(file, {
+			loadStadium: (stadium) => this.loadStadium(stadium),
+			reportError: (message) => this.toast.show(message),
 		});
-		reader.readAsText(file);
 	}
 
 	// ── Tool management ────────────────────────────────────────────────────────

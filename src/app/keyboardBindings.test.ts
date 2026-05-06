@@ -9,6 +9,11 @@ function setup(overrides: Partial<Parameters<typeof bindKeyboard>[0]> = {}) {
 		<button id="shortcut-close"></button>
 		<div id="new-modal"></div>
 		<input id="editor-input" />
+		<select id="editor-select"></select>
+		<textarea id="editor-textarea"></textarea>
+		<div id="editor-contenteditable" contenteditable="true">
+			<span id="editor-contenteditable-child"></span>
+		</div>
 	`;
 	const actions = {
 		setShiftHeld: vi.fn(),
@@ -48,7 +53,7 @@ function keydown(
 }
 
 describe("bindKeyboard", () => {
-	it("dispatches command shortcuts before edit-target checks", () => {
+	it("dispatches command shortcuts outside edit targets", () => {
 		const { actions, doc } = setup();
 		keydown(doc, "s", { ctrlKey: true });
 		keydown(doc, "z", { ctrlKey: true });
@@ -64,6 +69,57 @@ describe("bindKeyboard", () => {
 		expect(actions.duplicate).toHaveBeenCalledOnce();
 		expect(actions.copy).toHaveBeenCalledOnce();
 		expect(actions.paste).toHaveBeenCalledOnce();
+	});
+
+	it("preserves native editing shortcuts except app-level save", () => {
+		const { actions, doc } = setup();
+		const targets = [
+			doc.getElementById("editor-input"),
+			doc.getElementById("editor-select"),
+			doc.getElementById("editor-textarea"),
+		];
+
+		for (const target of targets) {
+			if (!target) throw new Error("Expected editing target");
+			target.dispatchEvent(
+				new KeyboardEvent("keydown", {
+					key: "z",
+					ctrlKey: true,
+					bubbles: true,
+					cancelable: true,
+				}),
+			);
+			target.dispatchEvent(
+				new KeyboardEvent("keydown", {
+					key: "c",
+					ctrlKey: true,
+					bubbles: true,
+					cancelable: true,
+				}),
+			);
+			target.dispatchEvent(
+				new KeyboardEvent("keydown", {
+					key: "v",
+					ctrlKey: true,
+					bubbles: true,
+					cancelable: true,
+				}),
+			);
+		}
+
+		targets[0]?.dispatchEvent(
+			new KeyboardEvent("keydown", {
+				key: "s",
+				ctrlKey: true,
+				bubbles: true,
+				cancelable: true,
+			}),
+		);
+
+		expect(actions.undo).not.toHaveBeenCalled();
+		expect(actions.copy).not.toHaveBeenCalled();
+		expect(actions.paste).not.toHaveBeenCalled();
+		expect(actions.save).toHaveBeenCalledOnce();
 	});
 
 	it("maps tool keys and overlay toggles outside text inputs", () => {
@@ -98,6 +154,40 @@ describe("bindKeyboard", () => {
 
 		expect(actions.setTool).not.toHaveBeenCalled();
 		expect(actions.deleteSelected).not.toHaveBeenCalled();
+	});
+
+	it("ignores editor shortcuts from contenteditable targets", () => {
+		const { actions, doc } = setup();
+		const editableChild = doc.getElementById(
+			"editor-contenteditable-child",
+		) as HTMLElement;
+
+		editableChild.dispatchEvent(
+			new KeyboardEvent("keydown", {
+				key: "h",
+				bubbles: true,
+				cancelable: true,
+			}),
+		);
+		editableChild.dispatchEvent(
+			new KeyboardEvent("keydown", {
+				key: "Delete",
+				bubbles: true,
+				cancelable: true,
+			}),
+		);
+		editableChild.dispatchEvent(
+			new KeyboardEvent("keydown", {
+				key: "z",
+				ctrlKey: true,
+				bubbles: true,
+				cancelable: true,
+			}),
+		);
+
+		expect(actions.setTool).not.toHaveBeenCalled();
+		expect(actions.deleteSelected).not.toHaveBeenCalled();
+		expect(actions.undo).not.toHaveBeenCalled();
 	});
 
 	it("tracks shift state and closes modal layers on escape", () => {

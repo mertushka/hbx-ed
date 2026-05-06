@@ -18,7 +18,7 @@ describe("History", () => {
 		expect(history.redo()).toEqual({ value: 4 });
 	});
 
-	it("stores JSON snapshots instead of object references", () => {
+	it("stores cloned snapshots instead of object references", () => {
 		const history = new History<{ nested: { value: number } }>();
 		const state = { nested: { value: 1 } };
 		history.save(state);
@@ -26,6 +26,29 @@ describe("History", () => {
 		history.save(state);
 
 		expect(history.undo()).toEqual({ nested: { value: 1 } });
+	});
+
+	it("preserves structured-cloneable numeric values like Infinity", () => {
+		const history = new History<{ value: number }>();
+		history.save({ value: Infinity });
+		history.save({ value: 1 });
+
+		expect(history.undo()).toEqual({ value: Infinity });
+	});
+
+	it("returns stored falsy snapshots from undo and redo", () => {
+		const numbers = new History<number>();
+		numbers.save(0);
+		numbers.save(1);
+
+		expect(numbers.undo()).toBe(0);
+
+		const booleans = new History<boolean>();
+		booleans.save(true);
+		booleans.save(false);
+		booleans.undo();
+
+		expect(booleans.redo()).toBe(false);
 	});
 
 	it("keeps the newest 64 snapshots", () => {

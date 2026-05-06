@@ -672,4 +672,46 @@ describe("App", () => {
 			restoreFileReader();
 		}
 	});
+
+	it("preserves JSON5 numeric values through app undo and redo", () => {
+		const restoreFileReader = installFileReaderMock(
+			() => `{
+			name: 'Infinity History',
+			width: 100,
+			height: 50,
+			bg: { type: 'grass', width: Infinity },
+			vertexes: [{ x: 0, y: 0 }],
+			segments: [],
+			goals: [],
+			discs: [],
+			planes: [],
+			joints: [],
+		}`,
+		);
+		try {
+			const app = new App();
+			const internals = appInternals(app);
+			const fileInput = document.getElementById(
+				"file-input",
+			) as HTMLInputElement;
+			Object.defineProperty(fileInput, "files", {
+				value: [new File([""], "infinity-history.hbs")],
+				configurable: true,
+			});
+			fileInput.dispatchEvent(new Event("change"));
+
+			itemContaining("v0").click();
+			const xInput = propInputFor("x");
+			xInput.value = "10";
+			xInput.dispatchEvent(new Event("change"));
+
+			click("#btn-undo");
+			expect(internals.stadium?.bg?.width).toBe(Infinity);
+
+			click("#btn-redo");
+			expect(internals.stadium?.bg?.width).toBe(Infinity);
+		} finally {
+			restoreFileReader();
+		}
+	});
 });

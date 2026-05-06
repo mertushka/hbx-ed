@@ -57,18 +57,24 @@ export function bindKeyboard({
 	clearSelection,
 }: KeyboardBindingsOptions): void {
 	doc.addEventListener("keydown", (e) => {
+		const isEditing = isEditingTarget(e.target);
+
 		if (e.key === "Shift") {
 			setShiftHeld(true);
 			return;
 		}
 
 		if (
-			handleCommandShortcut(e, { undo, redo, save, duplicate, copy, paste })
+			handleCommandShortcut(
+				e,
+				{ undo, redo, save, duplicate, copy, paste },
+				isEditing,
+			)
 		) {
 			return;
 		}
 
-		if (isEditingTarget(e.target)) return;
+		if (isEditing) return;
 
 		if (e.key === "Delete" || e.key === "Del") {
 			e.preventDefault();
@@ -130,35 +136,39 @@ function handleCommandShortcut(
 		KeyboardBindingsOptions,
 		"undo" | "redo" | "save" | "duplicate" | "copy" | "paste"
 	>,
+	isEditing: boolean,
 ): boolean {
 	if (!e.ctrlKey && !e.metaKey) return false;
 
-	if (e.key === "z" && !e.shiftKey) {
+	const key = e.key.toLowerCase();
+	if (isEditing && key !== "s") return false;
+
+	if (key === "z" && !e.shiftKey) {
 		e.preventDefault();
 		actions.undo();
 		return true;
 	}
-	if (e.key === "y" || (e.shiftKey && e.key === "z")) {
+	if (key === "y" || (e.shiftKey && key === "z")) {
 		e.preventDefault();
 		actions.redo();
 		return true;
 	}
-	if (e.key === "s") {
+	if (key === "s") {
 		e.preventDefault();
 		actions.save();
 		return true;
 	}
-	if (e.key === "d") {
+	if (key === "d") {
 		e.preventDefault();
 		actions.duplicate();
 		return true;
 	}
-	if (e.key === "c") {
+	if (key === "c") {
 		e.preventDefault();
 		actions.copy();
 		return true;
 	}
-	if (e.key === "v") {
+	if (key === "v") {
 		e.preventDefault();
 		actions.paste();
 		return true;
@@ -201,9 +211,17 @@ function handleEscape({
 
 function isEditingTarget(target: EventTarget | null): boolean {
 	if (!(target instanceof HTMLElement)) return false;
+	const contentEditableTarget = target.closest("[contenteditable]");
+	const contentEditable =
+		contentEditableTarget?.getAttribute("contenteditable");
+
 	return (
 		target.tagName === "INPUT" ||
 		target.tagName === "SELECT" ||
-		target.tagName === "TEXTAREA"
+		target.tagName === "TEXTAREA" ||
+		target.isContentEditable ||
+		(contentEditable !== undefined &&
+			contentEditable !== null &&
+			contentEditable.toLowerCase() !== "false")
 	);
 }
