@@ -1,6 +1,6 @@
 import type { WorldPoint } from "../core/camera.ts";
 import { hitTest } from "../core/hitTest.ts";
-import type { Disc, Goal, Vec2, Vertex } from "../types/stadium.ts";
+import type { Disc, Goal, Vertex } from "../types/stadium.ts";
 import { snapToGrid } from "../utils/math.ts";
 import type { AppContext } from "./context.ts";
 import {
@@ -14,9 +14,12 @@ import {
 	type MultiDragOrigin,
 } from "./selectDrag.ts";
 import { findSnapVertex, objectsInRect } from "./selectGeometry.ts";
+import {
+	applySpawnDrag,
+	findSpawnDragOrigin,
+	type SpawnDragOrigin,
+} from "./selectSpawnDrag.ts";
 import type { Tool } from "./types.ts";
-
-const SPAWN_SNAP_PX = 10;
 
 // ── Drag state ───────────────────────────────────────────────────────────────
 
@@ -36,7 +39,7 @@ interface DragState {
 	originVertex?: { x: number; y: number };
 	originDisc?: [number, number];
 	originGoal?: { p0: [number, number]; p1: [number, number] };
-	originSpawn?: [number, number];
+	spawnOrigin?: SpawnDragOrigin;
 	curveOrigin?: CurveHandleDragOrigin;
 	multiOrigins?: MultiDragOrigin[];
 }
@@ -62,27 +65,17 @@ export class SelectTool implements Tool {
 		const zoom = this.getZoom();
 
 		// ── 1. Spawn points ──────────────────────────────────────────────────────
-		const spawnR = SPAWN_SNAP_PX / zoom;
-		for (const team of ["red", "blue"] as const) {
-			const arr: Vec2[] | undefined =
-				team === "red" ? stadium.redSpawnPoints : stadium.blueSpawnPoints;
-			if (!arr) continue;
-			const idx = arr.findIndex(
-				([sx, sy]) => Math.hypot(sx - pos.x, sy - pos.y) < spawnR,
-			);
-			if (idx >= 0) {
-				const spawn = arr[idx];
-				if (!spawn) return;
-				this.ctx.setSelection(null);
-				this.ctx.setMultiSelection(null);
-				this.drag = {
-					startWorld: pos,
-					kind: team === "red" ? "spawn-red" : "spawn-blue",
-					index: idx,
-					originSpawn: [...spawn] as [number, number],
-				};
-				return;
-			}
+		const spawnOrigin = findSpawnDragOrigin(stadium, pos, zoom);
+		if (spawnOrigin) {
+			this.ctx.setSelection(null);
+			this.ctx.setMultiSelection(null);
+			this.drag = {
+				startWorld: pos,
+				kind: spawnOrigin.kind,
+				index: spawnOrigin.index,
+				spawnOrigin,
+			};
+			return;
 		}
 
 		// ── 2. Curve handle on the selected segment ───────────────────────────────
@@ -277,18 +270,9 @@ export class SelectTool implements Tool {
 			g.p1 = [this.drag.originGoal.p1[0] + dx, this.drag.originGoal.p1[1] + dy];
 		} else if (
 			(this.drag.kind === "spawn-red" || this.drag.kind === "spawn-blue") &&
-			this.drag.originSpawn
+			this.drag.spawnOrigin
 		) {
-			const arr =
-				this.drag.kind === "spawn-red"
-					? stadium.redSpawnPoints
-					: stadium.blueSpawnPoints;
-			if (arr?.[this.drag.index]) {
-				arr[this.drag.index] = [
-					this.drag.originSpawn[0] + dx,
-					this.drag.originSpawn[1] + dy,
-				];
-			}
+			applySpawnDrag(stadium, this.drag.spawnOrigin, dx, dy);
 		} else if (this.drag.kind === "curve-handle" && this.drag.curveOrigin) {
 			const seg = stadium.segments[this.drag.curveOrigin.index];
 			if (!seg) return;
