@@ -139,6 +139,30 @@ describe("drawPreviewBackground", () => {
 		expect(ctx.stroke).toHaveBeenCalled();
 	});
 
+	it("fills grass bounds with a texture pattern when available", () => {
+		const ctx = mockContext();
+		const p = patterns();
+
+		drawPreviewBackground(
+			ctx,
+			stadium({
+				type: "grass",
+				width: 90,
+				height: 45,
+				kickOffRadius: 20,
+				cornerRadius: 8,
+			}),
+			camera(),
+			p,
+			{ width: 240, height: 160 },
+		);
+
+		expect(ctx.styles.fillStyle).toBe(p.grass);
+		expect(ctx.scale).toHaveBeenCalledWith(2, 2);
+		expect(ctx.save).toHaveBeenCalledTimes(2);
+		expect(ctx.restore).toHaveBeenCalledTimes(2);
+	});
+
 	it("draws hockey concrete fill, dashed center, and side arcs", () => {
 		const ctx = mockContext();
 		const cam = camera();

@@ -98,6 +98,16 @@ describe("preview primitive drawing", () => {
 		);
 
 		expect(transparentCtx.beginPath).not.toHaveBeenCalled();
+
+		const missingVertexCtx = mockContext();
+		drawPreviewSegment(
+			missingVertexCtx,
+			{ v0: 0, v1: 99, color: "FFFFFF" },
+			verts,
+			{},
+		);
+
+		expect(missingVertexCtx.beginPath).not.toHaveBeenCalled();
 	});
 
 	it("draws curved segments through resolved traits", () => {
@@ -138,6 +148,17 @@ describe("preview primitive drawing", () => {
 		expect(ctx.lineTo).toHaveBeenCalledWith(3, 4);
 		expect(ctx.styles.strokeStyle).toBe("rgba(0,0,0,1)");
 		expect(ctx.stroke).toHaveBeenCalledOnce();
+
+		const defaultPosCtx = mockContext();
+		drawPreviewJoint(defaultPosCtx, { d0: 0, d1: 1 }, [{}, {}]);
+
+		expect(defaultPosCtx.moveTo).toHaveBeenCalledWith(0, 0);
+		expect(defaultPosCtx.lineTo).toHaveBeenCalledWith(0, 0);
+
+		const missingDiscCtx = mockContext();
+		drawPreviewJoint(missingDiscCtx, { d0: 0, d1: 2 }, discs);
+
+		expect(missingDiscCtx.beginPath).not.toHaveBeenCalled();
 	});
 
 	it("draws discs through resolved traits and respects transparent/negative guards", () => {

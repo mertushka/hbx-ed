@@ -84,11 +84,15 @@ describe("objectSections", () => {
 			"Vertex #0",
 		);
 		setNumber("x", "42");
+		setNumber("y", "24");
 		setNumber("bCoef", "0.7");
 
 		const red = flag("cMask", "red");
 		red.checked = true;
 		red.dispatchEvent(new Event("change"));
+		const wall = flag("cGroup", "wall");
+		wall.checked = true;
+		wall.dispatchEvent(new Event("change"));
 
 		const trait = control<HTMLSelectElement>("trait");
 		trait.value = "metal";
@@ -100,12 +104,13 @@ describe("objectSections", () => {
 
 		expect(s.vertexes[0]).toMatchObject({
 			x: 42,
-			y: 2,
+			y: 24,
 			bCoef: 0.7,
 			cMask: ["ball", "red"],
+			cGroup: ["wall"],
 		});
 		expect(s.vertexes[0]?.trait).toBeUndefined();
-		expect(notify).toHaveBeenCalledTimes(5);
+		expect(notify).toHaveBeenCalledTimes(7);
 		expect(onDelete).toHaveBeenCalledOnce();
 	});
 
@@ -133,9 +138,18 @@ describe("objectSections", () => {
 		color.value = "123ABC";
 		color.dispatchEvent(new Event("change"));
 
+		setNumber("bCoef", "0.8");
+		setNumber("bias", "2");
+
+		const blue = flag("cMask", "blue");
+		blue.checked = true;
+		blue.dispatchEvent(new Event("change"));
 		const kick = flag("cGroup", "kick");
 		kick.checked = true;
 		kick.dispatchEvent(new Event("change"));
+		const trait = control<HTMLSelectElement>("trait");
+		trait.value = "metal";
+		trait.dispatchEvent(new Event("change"));
 
 		expect(s.segments[0]).toMatchObject({
 			v0: 2,
@@ -143,10 +157,14 @@ describe("objectSections", () => {
 			curve: 45,
 			vis: true,
 			color: "123ABC",
+			bCoef: 0.8,
+			bias: 2,
+			cMask: ["blue"],
 			cGroup: ["wall", "kick"],
+			trait: "metal",
 		});
 		expect(s.segments[0]?.curveF).toBeUndefined();
-		expect(notify).toHaveBeenCalledTimes(6);
+		expect(notify).toHaveBeenCalledTimes(10);
 	});
 
 	it("renders disc fields and initializes optional position fields", () => {
@@ -159,18 +177,36 @@ describe("objectSections", () => {
 		setNumber("x", "11");
 		setNumber("y", "12");
 		setNumber("radius", "25");
+		setNumber("invMass", "2");
+		setNumber("damping", "0.8");
+		setNumber("bCoef", "0.9");
 		const color =
 			rowByLabel("color").querySelector<HTMLInputElement>('input[type="text"]');
 		if (!color) throw new Error("Expected color text input");
 		color.value = "FEDCBA";
 		color.dispatchEvent(new Event("change"));
+		const red = flag("cMask", "red");
+		red.checked = true;
+		red.dispatchEvent(new Event("change"));
+		const kick = flag("cGroup", "kick");
+		kick.checked = true;
+		kick.dispatchEvent(new Event("change"));
+		const trait = control<HTMLSelectElement>("trait");
+		trait.value = "metal";
+		trait.dispatchEvent(new Event("change"));
 
 		expect(s.discs[0]).toMatchObject({
 			pos: [11, 12],
 			radius: 25,
+			invMass: 2,
+			damping: 0.8,
+			bCoef: 0.9,
 			color: "FEDCBA",
+			cMask: ["red"],
+			cGroup: ["kick"],
+			trait: "metal",
 		});
-		expect(notify).toHaveBeenCalledTimes(4);
+		expect(notify).toHaveBeenCalledTimes(10);
 	});
 
 	it("renders plane fields and initializes optional normal fields", () => {
@@ -183,16 +219,26 @@ describe("objectSections", () => {
 		setNumber("normal.x", "1");
 		setNumber("normal.y", "0");
 		setNumber("dist", "55");
+		setNumber("bCoef", "0.7");
 		const all = flag("cMask", "all");
 		all.checked = true;
 		all.dispatchEvent(new Event("change"));
+		const kick = flag("cGroup", "kick");
+		kick.checked = true;
+		kick.dispatchEvent(new Event("change"));
+		const trait = control<HTMLSelectElement>("trait");
+		trait.value = "metal";
+		trait.dispatchEvent(new Event("change"));
 
 		expect(s.planes[0]).toMatchObject({
 			normal: [1, 0],
 			dist: 55,
+			bCoef: 0.7,
 			cMask: ["all"],
+			cGroup: ["kick"],
+			trait: "metal",
 		});
-		expect(notify).toHaveBeenCalledTimes(4);
+		expect(notify).toHaveBeenCalledTimes(7);
 	});
 
 	it("renders joint fields with rounded disc refs and trait deletion", () => {
@@ -203,13 +249,18 @@ describe("objectSections", () => {
 
 		setNumber("d0", "2.4");
 		setNumber("d1", "3.6");
+		const color =
+			rowByLabel("color").querySelector<HTMLInputElement>('input[type="text"]');
+		if (!color) throw new Error("Expected joint color input");
+		color.value = "123ABC";
+		color.dispatchEvent(new Event("change"));
 		const trait = control<HTMLSelectElement>("trait");
 		trait.value = "(none)";
 		trait.dispatchEvent(new Event("change"));
 
-		expect(s.joints[0]).toMatchObject({ d0: 2, d1: 4 });
+		expect(s.joints[0]).toMatchObject({ d0: 2, d1: 4, color: "123ABC" });
 		expect(s.joints[0]?.trait).toBeUndefined();
-		expect(notify).toHaveBeenCalledTimes(3);
+		expect(notify).toHaveBeenCalledTimes(4);
 	});
 
 	it("renders goal fields, team selection, and optional endpoints", () => {
@@ -226,12 +277,16 @@ describe("objectSections", () => {
 		setNumber("p0.y", "-2");
 		setNumber("p1.x", "3");
 		setNumber("p1.y", "4");
+		const trait = control<HTMLSelectElement>("trait");
+		trait.value = "metal";
+		trait.dispatchEvent(new Event("change"));
 
 		expect(s.goals[0]).toEqual({
 			team: "blue",
 			p0: [-1, -2],
 			p1: [3, 4],
+			trait: "metal",
 		});
-		expect(notify).toHaveBeenCalledTimes(5);
+		expect(notify).toHaveBeenCalledTimes(6);
 	});
 });

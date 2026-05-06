@@ -110,17 +110,82 @@ describe("stadiumSections", () => {
 		width.value = "222";
 		width.dispatchEvent(new Event("change"));
 
+		const height = control<HTMLInputElement>("height");
+		height.value = "111";
+		height.dispatchEvent(new Event("change"));
+
+		const maxViewWidth = control<HTMLInputElement>("maxViewWidth");
+		maxViewWidth.value = "333";
+		maxViewWidth.dispatchEvent(new Event("change"));
+
+		const cameraFollow = control<HTMLSelectElement>("cameraFollow");
+		cameraFollow.value = "player";
+		cameraFollow.dispatchEvent(new Event("change"));
+
+		const spawnDist = control<HTMLInputElement>("spawnDist");
+		spawnDist.value = "250";
+		spawnDist.dispatchEvent(new Event("change"));
+
+		const kickOffReset = control<HTMLSelectElement>("kickOffReset");
+		kickOffReset.value = "full";
+		kickOffReset.dispatchEvent(new Event("change"));
+
+		const canBeStored = control<HTMLInputElement>("canBeStored");
+		canBeStored.checked = false;
+		canBeStored.dispatchEvent(new Event("change"));
+
 		const bgType = control<HTMLSelectElement>("bg.type");
 		bgType.value = "hockey";
 		bgType.dispatchEvent(new Event("change"));
 
+		const bgWidth = control<HTMLInputElement>("bg.width");
+		bgWidth.value = "180";
+		bgWidth.dispatchEvent(new Event("change"));
+
+		const bgHeight = control<HTMLInputElement>("bg.height");
+		bgHeight.value = "80";
+		bgHeight.dispatchEvent(new Event("change"));
+
+		const bgKickOff = control<HTMLInputElement>("bg.koRadius");
+		bgKickOff.value = "25";
+		bgKickOff.dispatchEvent(new Event("change"));
+
+		const bgCorner = control<HTMLInputElement>("bg.cornerR");
+		bgCorner.value = "8";
+		bgCorner.dispatchEvent(new Event("change"));
+
+		const bgGoalLine = control<HTMLInputElement>("bg.goalLine");
+		bgGoalLine.value = "70";
+		bgGoalLine.dispatchEvent(new Event("change"));
+
+		const bgColor = rowIn(document, "bg.color").querySelector<HTMLInputElement>(
+			'input[type="text"]',
+		);
+		if (!bgColor) throw new Error("Expected background color input");
+		bgColor.value = "123ABC";
+		bgColor.dispatchEvent(new Event("change"));
+
 		expect(s.name).toBe("Renamed");
 		expect(s.width).toBe(222);
+		expect(s.height).toBe(111);
+		expect(s.maxViewWidth).toBe(333);
+		expect(s.cameraFollow).toBe("player");
+		expect(s.spawnDistance).toBe(250);
+		expect(s.kickOffReset).toBe("full");
+		expect(s.canBeStored).toBe(false);
 		expect(s.bg?.type).toBe("hockey");
+		expect(s.bg).toMatchObject({
+			width: 180,
+			height: 80,
+			kickOffRadius: 25,
+			cornerRadius: 8,
+			goalLine: 70,
+			color: "123ABC",
+		});
 		expect(document.getElementById("stadium-name-display")?.textContent).toBe(
 			"Renamed",
 		);
-		expect(notify).toHaveBeenCalledTimes(3);
+		expect(notify).toHaveBeenCalledTimes(15);
 	});
 
 	it("switches ball physics source and rebuilds the panel", () => {
@@ -200,6 +265,18 @@ describe("stadiumSections", () => {
 		const radius = controlIn<HTMLInputElement>(ball, "radius");
 		radius.value = "12";
 		radius.dispatchEvent(new Event("change"));
+		const posY = controlIn<HTMLInputElement>(ball, "pos.y");
+		posY.value = "8";
+		posY.dispatchEvent(new Event("change"));
+		const invMass = controlIn<HTMLInputElement>(ball, "invMass");
+		invMass.value = "2";
+		invMass.dispatchEvent(new Event("change"));
+		const damping = controlIn<HTMLInputElement>(ball, "damping");
+		damping.value = "0.8";
+		damping.dispatchEvent(new Event("change"));
+		const bCoef = controlIn<HTMLInputElement>(ball, "bCoef");
+		bCoef.value = "0.6";
+		bCoef.dispatchEvent(new Event("change"));
 		const color = rowIn(ball, "color").querySelector<HTMLInputElement>(
 			'input[type="text"]',
 		);
@@ -209,14 +286,21 @@ describe("stadiumSections", () => {
 		const red = flagIn(ball, "cMask", "red");
 		red.checked = true;
 		red.dispatchEvent(new Event("change"));
+		const wall = flagIn(ball, "cGroup", "wall");
+		wall.checked = true;
+		wall.dispatchEvent(new Event("change"));
 
 		expect(s.ballPhysics).toMatchObject({
-			pos: [7, 0],
+			pos: [7, 8],
 			radius: 12,
+			invMass: 2,
+			damping: 0.8,
+			bCoef: 0.6,
 			color: "123ABC",
 			cMask: ["red"],
+			cGroup: ["wall"],
 		});
-		expect(notify).toHaveBeenCalledTimes(4);
+		expect(notify).toHaveBeenCalledTimes(9);
 		expect(rebuild).not.toHaveBeenCalled();
 	});
 
@@ -240,16 +324,44 @@ describe("stadiumSections", () => {
 		const accel = controlIn<HTMLInputElement>(player, "accel");
 		accel.value = "0.2";
 		accel.dispatchEvent(new Event("change"));
+		const invMass = controlIn<HTMLInputElement>(player, "invMass");
+		invMass.value = "0.7";
+		invMass.dispatchEvent(new Event("change"));
+		const damping = controlIn<HTMLInputElement>(player, "damping");
+		damping.value = "0.88";
+		damping.dispatchEvent(new Event("change"));
+		const bCoef = controlIn<HTMLInputElement>(player, "bCoef");
+		bCoef.value = "0.9";
+		bCoef.dispatchEvent(new Event("change"));
+		const kickAccel = controlIn<HTMLInputElement>(player, "kickAccel");
+		kickAccel.value = "0.11";
+		kickAccel.dispatchEvent(new Event("change"));
+		const kickDamp = controlIn<HTMLInputElement>(player, "kickDamp");
+		kickDamp.value = "0.6";
+		kickDamp.dispatchEvent(new Event("change"));
+		const kickStr = controlIn<HTMLInputElement>(player, "kickStr");
+		kickStr.value = "6";
+		kickStr.dispatchEvent(new Event("change"));
+		const kickback = controlIn<HTMLInputElement>(player, "kickback");
+		kickback.value = "1.5";
+		kickback.dispatchEvent(new Event("change"));
 		const kick = flagIn(player, "cGroup", "kick");
 		kick.checked = true;
 		kick.dispatchEvent(new Event("change"));
 
 		expect(s.playerPhysics).toMatchObject({
 			radius: 21,
+			invMass: 0.7,
+			damping: 0.88,
+			bCoef: 0.9,
 			acceleration: 0.2,
+			kickingAcceleration: 0.11,
+			kickingDamping: 0.6,
+			kickStrength: 6,
+			kickback: 1.5,
 			cGroup: ["kick"],
 		});
-		expect(notify).toHaveBeenCalledTimes(3);
+		expect(notify).toHaveBeenCalledTimes(10);
 	});
 
 	it("edits trait fields and supports unsetting optional values", () => {
