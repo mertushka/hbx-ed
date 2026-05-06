@@ -9,7 +9,6 @@ interface SelectionEditorState {
 	readonly multiSelection: MultiSelection | null;
 	select(selection: Selection | null): void;
 	setMultiSelection(multiSelection: MultiSelection | null): void;
-	clearMultiSelection(): boolean;
 }
 
 interface SelectionRenderer {
@@ -65,6 +64,7 @@ export class SelectionController {
 	select(selection: Selection | null): void {
 		this.editorState.select(selection);
 		if (selection !== null) {
+			this.editorState.setMultiSelection(null);
 			this.renderer.multiSelection = null;
 		}
 
@@ -101,9 +101,12 @@ export class SelectionController {
 	}
 
 	clearMultiSelection(): boolean {
-		if (!this.editorState.clearMultiSelection()) return false;
+		const hadMultiSelection = this.editorState.multiSelection !== null;
 
+		this.editorState.setMultiSelection(null);
 		this.renderer.multiSelection = null;
+		if (!hadMultiSelection) return false;
+
 		this.statusBar.setSelection("nothing selected");
 		this.objectTree.render(this.getStadium(), this.editorState.selection, null);
 		this.renderCanvas();

@@ -115,6 +115,34 @@ describe("SelectionController", () => {
 		expect(controller.contains({ type: "goal", index: 0 })).toBe(false);
 	});
 
+	it("syncs empty multi-selection without touching status text", () => {
+		const { controller, editorState, render, renderer, statusBar } = setup();
+
+		controller.setMultiSelection(null);
+
+		expect(editorState.multiSelection).toBeNull();
+		expect(renderer.multiSelection).toBeNull();
+		expect(statusBar.setSelection).not.toHaveBeenCalled();
+		expect(render).toHaveBeenCalledOnce();
+		expect(controller.contains({ type: "vertex", index: 0 })).toBe(false);
+	});
+
+	it("syncs single-item multi-selection without touching status text", () => {
+		const { controller, editorState, render, renderer, statusBar } = setup();
+		const multiSelection: MultiSelection = {
+			items: [{ type: "vertex", index: 0 }],
+		};
+
+		controller.setMultiSelection(multiSelection);
+
+		expect(editorState.multiSelection).toBe(multiSelection);
+		expect(renderer.multiSelection).toBe(multiSelection);
+		expect(statusBar.setSelection).not.toHaveBeenCalled();
+		expect(render).toHaveBeenCalledOnce();
+		expect(controller.contains({ type: "vertex", index: 0 })).toBe(true);
+		expect(controller.contains({ type: "segment", index: 0 })).toBe(false);
+	});
+
 	it("clears multi-selection only when one exists", () => {
 		const { controller, editorState, objectTree, render, renderer, statusBar } =
 			setup();

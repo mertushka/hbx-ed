@@ -230,7 +230,7 @@ export class App {
 	private loadStadium(data: StadiumObject): void {
 		const normalized = normalizeStadium(data);
 		this.editorState.load(normalized);
-		this.renderer.multiSelection = null;
+		this.selectionController.clearMultiSelection();
 		this.dirty = false;
 
 		this.getEl("#stadium-name-display").textContent = normalized.name;
@@ -273,8 +273,7 @@ export class App {
 			this.stadium
 		) {
 			const count = deleteSelections(this.stadium, this.multiSelection.items);
-			this.multiSelection = null;
-			this.renderer.multiSelection = null;
+			this.selectionController.clearMultiSelection();
 			this.select(null);
 			this.saveMutation();
 			this.toast.show(`Deleted ${count} objects`);
@@ -369,7 +368,7 @@ export class App {
 	private undo(): void {
 		const prev = this.editorState.undo();
 		if (!prev) return;
-		this.renderer.multiSelection = null;
+		this.selectionController.clearMultiSelection();
 		this.select(null);
 		this.runValidation();
 		this.markDirty();
@@ -379,7 +378,7 @@ export class App {
 	private redo(): void {
 		const next = this.editorState.redo();
 		if (!next) return;
-		this.renderer.multiSelection = null;
+		this.selectionController.clearMultiSelection();
 		this.select(null);
 		this.runValidation();
 		this.markDirty();
