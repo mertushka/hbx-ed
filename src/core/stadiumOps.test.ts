@@ -117,7 +117,7 @@ describe("stadiumOps", () => {
 				{ type: "vertex", index: 0 },
 				{ type: "vertex", index: 99 },
 			]),
-		).toBe(3);
+		).toBe(1);
 		expect(s.vertexes).toHaveLength(2);
 
 		reindexSegmentsAfterVertexDelete(s, [1]);

@@ -68,6 +68,7 @@ describe("EditorState", () => {
 		});
 		expect(state.clearMultiSelection()).toBe(true);
 		expect(state.multiSelection).toBeNull();
+		expect(state.selection).toEqual({ type: "vertex", index: 0 });
 	});
 
 	it("saves mutations and restores cloned undo/redo snapshots", () => {

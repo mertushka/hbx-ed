@@ -64,7 +64,7 @@ describe("PropertiesPanel", () => {
 			["joint", "Joint #0"],
 		] as const;
 
-		for (const [type, title] of selections) {
+		selections.forEach(([type, title], index) => {
 			panel.render(s, { type, index: 0 });
 			expect(document.querySelector(".prop-section-title")?.textContent).toBe(
 				title,
@@ -72,7 +72,8 @@ describe("PropertiesPanel", () => {
 			required(
 				document.querySelector<HTMLButtonElement>(".prop-btn.danger"),
 			).click();
-		}
+			expect(onDelete).toHaveBeenNthCalledWith(index + 1, { type, index: 0 });
+		});
 
 		expect(onDelete).toHaveBeenCalledTimes(selections.length);
 	});

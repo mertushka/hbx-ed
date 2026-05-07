@@ -14,10 +14,13 @@ export class PropertiesPanel {
 	private readonly placeholder: HTMLElement;
 	private readonly inner: HTMLElement;
 	private readonly onChange: ChangeCallback;
-	private readonly onDelete: () => void;
+	private readonly onDelete: (selection: Selection) => void;
 	private rebuildCallback: (() => void) | null = null;
 
-	constructor(onChange: ChangeCallback, onDelete: () => void) {
+	constructor(
+		onChange: ChangeCallback,
+		onDelete: (selection: Selection) => void,
+	) {
 		this.onChange = onChange;
 		this.onDelete = onDelete;
 		const placeholder = document.getElementById("props-placeholder");
@@ -61,6 +64,7 @@ export class PropertiesPanel {
 		selection: Selection,
 		notify: ChangeCallback,
 	): void {
+		const deleteSelection = (): void => this.onDelete(selection);
 		switch (selection.type) {
 			case "vertex":
 				renderVertexSection(
@@ -68,7 +72,7 @@ export class PropertiesPanel {
 					stadium,
 					selection.index,
 					notify,
-					this.onDelete,
+					deleteSelection,
 				);
 				break;
 			case "segment":
@@ -77,7 +81,7 @@ export class PropertiesPanel {
 					stadium,
 					selection.index,
 					notify,
-					this.onDelete,
+					deleteSelection,
 				);
 				break;
 			case "disc":
@@ -86,7 +90,7 @@ export class PropertiesPanel {
 					stadium,
 					selection.index,
 					notify,
-					this.onDelete,
+					deleteSelection,
 				);
 				break;
 			case "goal":
@@ -95,7 +99,7 @@ export class PropertiesPanel {
 					stadium,
 					selection.index,
 					notify,
-					this.onDelete,
+					deleteSelection,
 				);
 				break;
 			case "plane":
@@ -104,7 +108,7 @@ export class PropertiesPanel {
 					stadium,
 					selection.index,
 					notify,
-					this.onDelete,
+					deleteSelection,
 				);
 				break;
 			case "joint":
@@ -113,7 +117,7 @@ export class PropertiesPanel {
 					stadium,
 					selection.index,
 					notify,
-					this.onDelete,
+					deleteSelection,
 				);
 				break;
 		}

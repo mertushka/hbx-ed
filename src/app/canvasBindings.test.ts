@@ -275,7 +275,7 @@ describe("bindCanvasEvents", () => {
 	});
 
 	it("opens a context menu from long-press on the select tool", async () => {
-		const { actions, canvas } = setup({
+		const { active, actions, canvas, pan } = setup({
 			world: { x: 30, y: 40 },
 		});
 
@@ -286,6 +286,13 @@ describe("bindCanvasEvents", () => {
 			expect.any(MouseEvent),
 			{ type: "vertex", index: 0 },
 		);
+		expect(active.up).toHaveBeenCalledOnce();
+		expect(pan.up).toHaveBeenCalledOnce();
+
+		canvas.dispatchEvent(touchEvent("touchend", 100, 120));
+
+		expect(active.up).toHaveBeenCalledOnce();
+		expect(pan.up).toHaveBeenCalledOnce();
 	});
 
 	it("cancels long-press context menus after meaningful touch movement", async () => {

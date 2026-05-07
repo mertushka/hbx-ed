@@ -7,6 +7,11 @@ import {
 	buildSpawnContextMenuItems,
 	findSpawnPointAt,
 } from "./spawnContextMenu.ts";
+import {
+	distanceBetweenTouches,
+	firstTouch,
+	midpointBetweenTouches,
+} from "./touchGestures.ts";
 
 const LONG_PRESS_MS = 550;
 const LONG_PRESS_MOVE_TOLERANCE = 10;
@@ -115,10 +120,16 @@ export function bindCanvasEvents({
 					clientY: mouseEvent.clientY,
 				};
 				longPressTimer = setTimeout(() => {
-					openContextMenuAt(
-						mouseEventFromPoint(longPressStart ?? mouseEvent, "contextmenu"),
-					);
+					const point = longPressStart ?? mouseEvent;
+					const contextEvent = mouseEventFromPoint(point, "contextmenu");
+					if (lastTouchEvent) {
+						finishSyntheticTouch(
+							mouseEventFromPoint(lastTouchEvent, "mouseup"),
+						);
+					}
+					longPressStart = null;
 					longPressTimer = null;
+					openContextMenuAt(contextEvent);
 				}, LONG_PRESS_MS);
 			}
 		},
@@ -196,7 +207,9 @@ export function bindCanvasEvents({
 		pinchDistance =
 			e.touches.length > 1 ? distanceBetweenTouches(e.touches) : null;
 		if (wasPinching && !lastTouchEvent) return;
-		const mouseEvent = mouseEventFromTouch(e, "mouseup") ?? lastTouchEvent;
+		const mouseEvent = lastTouchEvent
+			? (mouseEventFromTouch(e, "mouseup") ?? lastTouchEvent)
+			: null;
 		if (!mouseEvent) return;
 		finishSyntheticTouch(mouseEvent);
 	};
@@ -241,33 +254,6 @@ function mouseEventFromPoint(
 		clientX: point.clientX,
 		clientY: point.clientY,
 	});
-}
-
-function firstTouch(list: TouchList): Touch | null {
-	return list[0] ?? list.item?.(0) ?? null;
-}
-
-function distanceBetweenTouches(touches: TouchList): number | null {
-	const first = firstTouch(touches);
-	const second = touches[1] ?? touches.item?.(1) ?? null;
-	if (!first || !second) return null;
-	return Math.hypot(
-		first.clientX - second.clientX,
-		first.clientY - second.clientY,
-	);
-}
-
-function midpointBetweenTouches(touches: TouchList): {
-	clientX: number;
-	clientY: number;
-} {
-	const first = firstTouch(touches);
-	const second = touches[1] ?? touches.item?.(1) ?? first;
-	if (!first || !second) return { clientX: 0, clientY: 0 };
-	return {
-		clientX: (first.clientX + second.clientX) / 2,
-		clientY: (first.clientY + second.clientY) / 2,
-	};
 }
 
 function movedBeyondLongPressTolerance(
