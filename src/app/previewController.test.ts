@@ -41,6 +41,18 @@ function setElementSize(el: HTMLElement, width: number, height: number): void {
 		}) as DOMRect;
 }
 
+function touchEvent(type: string, x: number, y: number): Event {
+	const event = new Event(type, { bubbles: true, cancelable: true });
+	const touch = { clientX: x, clientY: y };
+	Object.defineProperties(event, {
+		touches: {
+			value: type === "touchend" || type === "touchcancel" ? [] : [touch],
+		},
+		changedTouches: { value: [touch] },
+	});
+	return event;
+}
+
 function setup(current: StadiumObject | null = stadium()) {
 	document.body.innerHTML = `
 		<button id="open"></button>
@@ -128,6 +140,16 @@ describe("PreviewController", () => {
 		);
 		canvas.dispatchEvent(new MouseEvent("mouseleave", { bubbles: true }));
 
+		expect(canvas.style.cursor).toBe("grab");
+
+		const touchStart = touchEvent("touchstart", 10, 10);
+		const touchMove = touchEvent("touchmove", 30, 20);
+		canvas.dispatchEvent(touchStart);
+		canvas.dispatchEvent(touchMove);
+		canvas.dispatchEvent(touchEvent("touchend", 30, 20));
+
+		expect(touchStart.defaultPrevented).toBe(true);
+		expect(touchMove.defaultPrevented).toBe(true);
 		expect(canvas.style.cursor).toBe("grab");
 
 		canvas.dispatchEvent(

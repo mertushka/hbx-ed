@@ -39,6 +39,8 @@ export function bindCanvasEvents({
 	showObjectContextMenu,
 	saveHistory,
 }: CanvasBindingsOptions): void {
+	let lastTouchEvent: MouseEvent | null = null;
+
 	canvas.addEventListener("mousedown", (e) => {
 		if (e.button === 1 || (e.button === 0 && e.altKey)) {
 			getPanTool()?.onMouseDown?.(getWorldPos(e), e);
@@ -48,6 +50,18 @@ export function bindCanvasEvents({
 			getActiveTool().onMouseDown?.(getWorldPos(e), e);
 		}
 	});
+
+	canvas.addEventListener(
+		"touchstart",
+		(e) => {
+			e.preventDefault();
+			const mouseEvent = mouseEventFromTouch(e);
+			if (!mouseEvent || e.touches.length > 1) return;
+			lastTouchEvent = mouseEvent;
+			getActiveTool().onMouseDown?.(getWorldPos(mouseEvent), mouseEvent);
+		},
+		{ passive: false },
+	);
 
 	canvas.addEventListener("mousemove", (e) => {
 		const world = getWorldPos(e);
@@ -63,10 +77,44 @@ export function bindCanvasEvents({
 		}
 	});
 
+	canvas.addEventListener(
+		"touchmove",
+		(e) => {
+			e.preventDefault();
+			const mouseEvent = mouseEventFromTouch(e);
+			if (!mouseEvent || e.touches.length > 1) return;
+			lastTouchEvent = mouseEvent;
+
+			const world = getWorldPos(mouseEvent);
+			setCoords(world.x, world.y);
+
+			const snapEl = doc.getElementById("status-snap");
+			if (snapEl) snapEl.style.display = "none";
+
+			const activeTool = getActiveTool();
+			activeTool.onMouseMove?.(world, mouseEvent);
+			if (activeTool.name !== "pan") {
+				getPanTool()?.onMouseMove?.(world, mouseEvent);
+			}
+		},
+		{ passive: false },
+	);
+
 	canvas.addEventListener("mouseup", (e) => {
 		getActiveTool().onMouseUp?.(getWorldPos(e), e);
 		getPanTool()?.onMouseUp?.(getWorldPos(e), e);
 	});
+
+	const finishTouch = (e: TouchEvent): void => {
+		e.preventDefault();
+		const mouseEvent = mouseEventFromTouch(e) ?? lastTouchEvent;
+		if (!mouseEvent) return;
+		getActiveTool().onMouseUp?.(getWorldPos(mouseEvent), mouseEvent);
+		getPanTool()?.onMouseUp?.(getWorldPos(mouseEvent), mouseEvent);
+		lastTouchEvent = null;
+	};
+	canvas.addEventListener("touchend", finishTouch, { passive: false });
+	canvas.addEventListener("touchcancel", finishTouch, { passive: false });
 
 	canvas.addEventListener(
 		"wheel",
@@ -104,4 +152,20 @@ export function bindCanvasEvents({
 			showObjectContextMenu(e, hit);
 		}
 	});
+}
+
+function mouseEventFromTouch(event: TouchEvent): MouseEvent | null {
+	const touch = firstTouch(event.changedTouches) ?? firstTouch(event.touches);
+	if (!touch) return null;
+	return new MouseEvent("mousemove", {
+		bubbles: true,
+		cancelable: true,
+		button: 0,
+		clientX: touch.clientX,
+		clientY: touch.clientY,
+	});
+}
+
+function firstTouch(list: TouchList): Touch | null {
+	return list[0] ?? list.item(0);
 }

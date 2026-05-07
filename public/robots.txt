@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://hbx-ed.1351820.xyz/sitemap.xml

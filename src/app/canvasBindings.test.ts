@@ -52,6 +52,18 @@ function menuItem(items: MenuDef, label: string): MenuItemDef {
 	return item;
 }
 
+function touchEvent(type: string, x: number, y: number): Event {
+	const event = new Event(type, { bubbles: true, cancelable: true });
+	const touch = { clientX: x, clientY: y };
+	Object.defineProperties(event, {
+		touches: {
+			value: type === "touchend" || type === "touchcancel" ? [] : [touch],
+		},
+		changedTouches: { value: [touch] },
+	});
+	return event;
+}
+
 function setup(options: { world?: WorldPoint; activeName?: string } = {}) {
 	document.body.innerHTML = `
 		<canvas id="canvas"></canvas>
@@ -133,6 +145,36 @@ describe("bindCanvasEvents", () => {
 			expect.any(MouseEvent),
 		);
 		expect(pan.move).toHaveBeenCalledWith(state.world, expect.any(MouseEvent));
+	});
+
+	it("routes single-touch canvas input through the active tool", () => {
+		const { active, actions, canvas, pan, state } = setup({
+			world: { x: 12, y: 34 },
+		});
+
+		const start = touchEvent("touchstart", 100, 120);
+		const move = touchEvent("touchmove", 110, 140);
+		const end = touchEvent("touchend", 110, 140);
+
+		canvas.dispatchEvent(start);
+		canvas.dispatchEvent(move);
+		canvas.dispatchEvent(end);
+
+		expect(start.defaultPrevented).toBe(true);
+		expect(move.defaultPrevented).toBe(true);
+		expect(end.defaultPrevented).toBe(true);
+		expect(active.down).toHaveBeenCalledWith(
+			state.world,
+			expect.any(MouseEvent),
+		);
+		expect(actions.setCoords).toHaveBeenCalledWith(12, 34);
+		expect(active.move).toHaveBeenCalledWith(
+			state.world,
+			expect.any(MouseEvent),
+		);
+		expect(pan.move).toHaveBeenCalledWith(state.world, expect.any(MouseEvent));
+		expect(active.up).toHaveBeenCalledWith(state.world, expect.any(MouseEvent));
+		expect(pan.up).toHaveBeenCalledWith(state.world, expect.any(MouseEvent));
 	});
 
 	it("does not double-route pan movement when pan is the active tool", () => {

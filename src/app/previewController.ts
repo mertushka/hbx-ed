@@ -134,13 +134,38 @@ export class PreviewController {
 		});
 		this.canvas.addEventListener("mousemove", (e) => {
 			if (!panning) return;
-			this.camera.x = camOrigin.x - (e.clientX - panStart.x) / this.camera.zoom;
-			this.camera.y = camOrigin.y - (e.clientY - panStart.y) / this.camera.zoom;
-			this.render();
+			this.panTo(e.clientX, e.clientY, panStart, camOrigin);
 		});
 		this.canvas.addEventListener("mouseup", stopPanning);
 		this.canvas.addEventListener("mouseleave", stopPanning);
 		this.canvas.style.cursor = "grab";
+
+		this.canvas.addEventListener(
+			"touchstart",
+			(e) => {
+				e.preventDefault();
+				const touch = firstTouch(e.touches);
+				if (!touch || e.touches.length > 1) return;
+				panning = true;
+				panStart = { x: touch.clientX, y: touch.clientY };
+				camOrigin = { x: this.camera.x, y: this.camera.y };
+				this.canvas.style.cursor = "grabbing";
+			},
+			{ passive: false },
+		);
+		this.canvas.addEventListener(
+			"touchmove",
+			(e) => {
+				e.preventDefault();
+				if (!panning || e.touches.length > 1) return;
+				const touch = firstTouch(e.touches);
+				if (!touch) return;
+				this.panTo(touch.clientX, touch.clientY, panStart, camOrigin);
+			},
+			{ passive: false },
+		);
+		this.canvas.addEventListener("touchend", stopPanning);
+		this.canvas.addEventListener("touchcancel", stopPanning);
 
 		this.canvas.addEventListener(
 			"wheel",
@@ -160,4 +185,19 @@ export class PreviewController {
 			{ passive: false },
 		);
 	}
+
+	private panTo(
+		clientX: number,
+		clientY: number,
+		panStart: { x: number; y: number },
+		camOrigin: { x: number; y: number },
+	): void {
+		this.camera.x = camOrigin.x - (clientX - panStart.x) / this.camera.zoom;
+		this.camera.y = camOrigin.y - (clientY - panStart.y) / this.camera.zoom;
+		this.render();
+	}
+}
+
+function firstTouch(list: TouchList): Touch | null {
+	return list[0] ?? list.item(0);
 }

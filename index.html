@@ -4,26 +4,95 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="canonical" href="https://hbx-ed.1351820.xyz/" />
+    <meta name="robots" content="index,follow,max-image-preview:large" />
+    <meta name="application-name" content="HBX-ED" />
+    <meta name="author" content="mertushka" />
+    <meta name="creator" content="mertushka" />
+    <meta name="publisher" content="mertushka" />
     <meta
       name="description"
-      content="HBX-ED is a browser-based visual stadium editor for HaxBall .hbs files."
+      content="HBX-ED is a free browser-based HaxBall stadium editor for creating, editing, validating, previewing, and exporting .hbs stadium files."
     />
     <meta name="theme-color" content="#101820" />
+    <meta property="og:site_name" content="HBX-ED" />
+    <meta property="og:locale" content="en_US" />
     <meta property="og:title" content="HBX-ED - HaxBall Stadium Editor" />
     <meta
       property="og:description"
-      content="Design, edit, validate, preview, and export HaxBall stadium files from a focused browser workspace."
+      content="Create, edit, validate, preview, and export HaxBall .hbs stadium files from a focused browser workspace."
     />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://hbx-ed.1351820.xyz/" />
     <meta property="og:logo" content="https://hbx-ed.1351820.xyz/brand.svg" />
+    <meta property="og:image:secure_url" content="https://hbx-ed.1351820.xyz/og-image.png" />
     <meta property="og:image" content="https://hbx-ed.1351820.xyz/og-image.png" />
+    <meta property="og:image:type" content="image/png" />
     <meta property="og:image:alt" content="HBX-ED visual HaxBall stadium editor interface" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="HBX-ED - HaxBall Stadium Editor" />
+    <meta
+      name="twitter:description"
+      content="A free visual HaxBall stadium editor for .hbs files: design maps, validate geometry, preview layouts, and export stadiums."
+    />
     <meta name="twitter:image" content="https://hbx-ed.1351820.xyz/og-image.png" />
+    <meta name="twitter:image:alt" content="HBX-ED visual HaxBall stadium editor interface" />
     <title>HBX-ED - HaxBall Stadium Editor</title>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Person",
+            "@id": "https://hbx-ed.1351820.xyz/#creator",
+            "name": "mertushka",
+            "url": "https://github.com/mertushka"
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://hbx-ed.1351820.xyz/#website",
+            "url": "https://hbx-ed.1351820.xyz/",
+            "name": "HBX-ED",
+            "alternateName": ["HaxBall Stadium Editor", "HBX ED"],
+            "description": "A free browser-based HaxBall stadium editor for .hbs files.",
+            "inLanguage": "en",
+            "publisher": { "@id": "https://hbx-ed.1351820.xyz/#creator" }
+          },
+          {
+            "@type": ["SoftwareApplication", "WebApplication"],
+            "@id": "https://hbx-ed.1351820.xyz/#app",
+            "name": "HBX-ED",
+            "alternateName": "HaxBall Stadium Editor",
+            "url": "https://hbx-ed.1351820.xyz/",
+            "image": "https://hbx-ed.1351820.xyz/og-image.png",
+            "screenshot": "https://hbx-ed.1351820.xyz/og-image.png",
+            "applicationCategory": "DesignApplication",
+            "operatingSystem": "Any",
+            "browserRequirements": "Requires a modern web browser with Canvas 2D support.",
+            "isAccessibleForFree": true,
+            "description": "Create, edit, validate, preview, and export HaxBall .hbs stadium files in the browser.",
+            "keywords": "HaxBall stadium editor, HaxBall map editor, HBS editor, .hbs editor, HaxBall stadium maker",
+            "featureList": [
+              "Visual canvas editing for HaxBall stadium geometry",
+              "Vertex, segment, disc, goal, plane, joint, and spawn point editing",
+              "HBS file import and export",
+              "Stadium validation feedback",
+              "HaxBall-like preview and PNG export"
+            ],
+            "license": "https://github.com/mertushka/hbx-ed/blob/main/LICENSE",
+            "codeRepository": "https://github.com/mertushka/hbx-ed",
+            "creator": { "@id": "https://hbx-ed.1351820.xyz/#creator" },
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "USD"
+            }
+          }
+        ]
+      }
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link
       href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
@@ -32,6 +101,7 @@
   </head>
   <body>
     <div id="app">
+      <h1 class="sr-only">HBX-ED HaxBall Stadium Editor</h1>
       <!-- Toolbar -->
       <div id="toolbar">
         <span id="title-logo">HBX-ED</span>
