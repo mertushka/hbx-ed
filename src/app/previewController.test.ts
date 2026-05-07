@@ -53,6 +53,16 @@ function touchEvent(type: string, x: number, y: number): Event {
 	return event;
 }
 
+function multiTouchEvent(type: string, points: [number, number][]): Event {
+	const event = new Event(type, { bubbles: true, cancelable: true });
+	const touches = points.map(([clientX, clientY]) => ({ clientX, clientY }));
+	Object.defineProperties(event, {
+		touches: { value: touches },
+		changedTouches: { value: touches },
+	});
+	return event;
+}
+
 function setup(current: StadiumObject | null = stadium()) {
 	document.body.innerHTML = `
 		<button id="open"></button>
@@ -151,6 +161,22 @@ describe("PreviewController", () => {
 		expect(touchStart.defaultPrevented).toBe(true);
 		expect(touchMove.defaultPrevented).toBe(true);
 		expect(canvas.style.cursor).toBe("grab");
+
+		const internals = controller as unknown as { camera: { zoom: number } };
+		const zoomBeforePinch = internals.camera.zoom;
+		canvas.dispatchEvent(
+			multiTouchEvent("touchstart", [
+				[100, 100],
+				[200, 100],
+			]),
+		);
+		canvas.dispatchEvent(
+			multiTouchEvent("touchmove", [
+				[100, 100],
+				[250, 100],
+			]),
+		);
+		expect(internals.camera.zoom).toBeGreaterThan(zoomBeforePinch);
 
 		canvas.dispatchEvent(
 			new WheelEvent("wheel", {

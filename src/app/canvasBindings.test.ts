@@ -64,6 +64,16 @@ function touchEvent(type: string, x: number, y: number): Event {
 	return event;
 }
 
+function multiTouchEvent(type: string, points: [number, number][]): Event {
+	const event = new Event(type, { bubbles: true, cancelable: true });
+	const touches = points.map(([clientX, clientY]) => ({ clientX, clientY }));
+	Object.defineProperties(event, {
+		touches: { value: touches },
+		changedTouches: { value: touches },
+	});
+	return event;
+}
+
 function setup(options: { world?: WorldPoint; activeName?: string } = {}) {
 	document.body.innerHTML = `
 		<canvas id="canvas"></canvas>
@@ -175,6 +185,44 @@ describe("bindCanvasEvents", () => {
 		expect(pan.move).toHaveBeenCalledWith(state.world, expect.any(MouseEvent));
 		expect(active.up).toHaveBeenCalledWith(state.world, expect.any(MouseEvent));
 		expect(pan.up).toHaveBeenCalledWith(state.world, expect.any(MouseEvent));
+	});
+
+	it("pinch-zooms around the touch midpoint without starting the active tool", () => {
+		const { active, actions, canvas } = setup({
+			world: { x: 12, y: 34 },
+		});
+
+		const start = multiTouchEvent("touchstart", [
+			[100, 100],
+			[200, 100],
+		]);
+		const move = multiTouchEvent("touchmove", [
+			[100, 100],
+			[250, 100],
+		]);
+
+		canvas.dispatchEvent(start);
+		canvas.dispatchEvent(move);
+
+		expect(start.defaultPrevented).toBe(true);
+		expect(move.defaultPrevented).toBe(true);
+		expect(active.down).not.toHaveBeenCalled();
+		expect(actions.zoomAt).toHaveBeenCalledWith(1.5, 12, 34);
+		expect(actions.render).toHaveBeenCalledOnce();
+	});
+
+	it("opens a context menu from long-press on the select tool", async () => {
+		const { actions, canvas } = setup({
+			world: { x: 30, y: 40 },
+		});
+
+		canvas.dispatchEvent(touchEvent("touchstart", 100, 120));
+		await new Promise((resolve) => setTimeout(resolve, 570));
+
+		expect(actions.showObjectContextMenu).toHaveBeenCalledWith(
+			expect.any(MouseEvent),
+			{ type: "vertex", index: 0 },
+		);
 	});
 
 	it("does not double-route pan movement when pan is the active tool", () => {

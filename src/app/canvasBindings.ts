@@ -8,6 +8,9 @@ import {
 	findSpawnPointAt,
 } from "./spawnContextMenu.ts";
 
+const LONG_PRESS_MS = 550;
+const LONG_PRESS_MOVE_TOLERANCE = 10;
+
 export interface CanvasBindingsOptions {
 	doc?: Document;
 	canvas: HTMLCanvasElement;
@@ -40,6 +43,45 @@ export function bindCanvasEvents({
 	saveHistory,
 }: CanvasBindingsOptions): void {
 	let lastTouchEvent: MouseEvent | null = null;
+	let pinchDistance: number | null = null;
+	let longPressTimer: ReturnType<typeof setTimeout> | null = null;
+	let longPressStart: { clientX: number; clientY: number } | null = null;
+
+	const clearLongPress = (): void => {
+		if (longPressTimer !== null) {
+			clearTimeout(longPressTimer);
+			longPressTimer = null;
+		}
+		longPressStart = null;
+	};
+
+	const finishSyntheticTouch = (mouseEvent: MouseEvent): void => {
+		getActiveTool().onMouseUp?.(getWorldPos(mouseEvent), mouseEvent);
+		getPanTool()?.onMouseUp?.(getWorldPos(mouseEvent), mouseEvent);
+		lastTouchEvent = null;
+	};
+
+	const openContextMenuAt = (mouseEvent: MouseEvent): void => {
+		const stadium = getStadium();
+		if (!stadium) return;
+
+		const world = getWorldPos(mouseEvent);
+		const zoom = getZoom();
+		const spawnHit = findSpawnPointAt(stadium, world.x, world.y, zoom);
+		if (spawnHit) {
+			const items = buildSpawnContextMenuItems(stadium, spawnHit, {
+				saveHistory,
+				render,
+			});
+			if (items) {
+				showContextMenu(mouseEvent.clientX, mouseEvent.clientY, items);
+				return;
+			}
+		}
+
+		const hit = hitTest(stadium, world.x, world.y, zoom);
+		if (hit) showObjectContextMenu(mouseEvent, hit);
+	};
 
 	canvas.addEventListener("mousedown", (e) => {
 		if (e.button === 1 || (e.button === 0 && e.altKey)) {
@@ -55,10 +97,30 @@ export function bindCanvasEvents({
 		"touchstart",
 		(e) => {
 			e.preventDefault();
-			const mouseEvent = mouseEventFromTouch(e);
-			if (!mouseEvent || e.touches.length > 1) return;
+			clearLongPress();
+			if (e.touches.length > 1) {
+				if (lastTouchEvent) finishSyntheticTouch(lastTouchEvent);
+				pinchDistance = distanceBetweenTouches(e.touches);
+				return;
+			}
+
+			const mouseEvent = mouseEventFromTouch(e, "mousedown");
+			if (!mouseEvent) return;
 			lastTouchEvent = mouseEvent;
 			getActiveTool().onMouseDown?.(getWorldPos(mouseEvent), mouseEvent);
+
+			if (getActiveTool().name === "select") {
+				longPressStart = {
+					clientX: mouseEvent.clientX,
+					clientY: mouseEvent.clientY,
+				};
+				longPressTimer = setTimeout(() => {
+					openContextMenuAt(
+						mouseEventFromPoint(longPressStart ?? mouseEvent, "contextmenu"),
+					);
+					longPressTimer = null;
+				}, LONG_PRESS_MS);
+			}
 		},
 		{ passive: false },
 	);
@@ -81,8 +143,30 @@ export function bindCanvasEvents({
 		"touchmove",
 		(e) => {
 			e.preventDefault();
-			const mouseEvent = mouseEventFromTouch(e);
-			if (!mouseEvent || e.touches.length > 1) return;
+			if (e.touches.length > 1) {
+				clearLongPress();
+				const distance = distanceBetweenTouches(e.touches);
+				if (distance === null) return;
+				if (pinchDistance !== null && pinchDistance > 0) {
+					const anchorEvent = mouseEventFromPoint(
+						midpointBetweenTouches(e.touches),
+						"mousemove",
+					);
+					const anchor = getWorldPos(anchorEvent);
+					zoomAt(distance / pinchDistance, anchor.x, anchor.y);
+					setCoords(anchor.x, anchor.y);
+					render();
+				}
+				pinchDistance = distance;
+				return;
+			}
+
+			pinchDistance = null;
+			const mouseEvent = mouseEventFromTouch(e, "mousemove");
+			if (!mouseEvent) return;
+			if (movedBeyondLongPressTolerance(mouseEvent, longPressStart)) {
+				clearLongPress();
+			}
 			lastTouchEvent = mouseEvent;
 
 			const world = getWorldPos(mouseEvent);
@@ -107,11 +191,14 @@ export function bindCanvasEvents({
 
 	const finishTouch = (e: TouchEvent): void => {
 		e.preventDefault();
-		const mouseEvent = mouseEventFromTouch(e) ?? lastTouchEvent;
+		clearLongPress();
+		const wasPinching = pinchDistance !== null;
+		pinchDistance =
+			e.touches.length > 1 ? distanceBetweenTouches(e.touches) : null;
+		if (wasPinching && !lastTouchEvent) return;
+		const mouseEvent = mouseEventFromTouch(e, "mouseup") ?? lastTouchEvent;
 		if (!mouseEvent) return;
-		getActiveTool().onMouseUp?.(getWorldPos(mouseEvent), mouseEvent);
-		getPanTool()?.onMouseUp?.(getWorldPos(mouseEvent), mouseEvent);
-		lastTouchEvent = null;
+		finishSyntheticTouch(mouseEvent);
 	};
 	canvas.addEventListener("touchend", finishTouch, { passive: false });
 	canvas.addEventListener("touchcancel", finishTouch, { passive: false });
@@ -130,42 +217,68 @@ export function bindCanvasEvents({
 
 	canvas.addEventListener("contextmenu", (e) => {
 		e.preventDefault();
-		const stadium = getStadium();
-		if (!stadium) return;
-
-		const world = getWorldPos(e);
-		const zoom = getZoom();
-		const spawnHit = findSpawnPointAt(stadium, world.x, world.y, zoom);
-		if (spawnHit) {
-			const items = buildSpawnContextMenuItems(stadium, spawnHit, {
-				saveHistory,
-				render,
-			});
-			if (items) {
-				showContextMenu(e.clientX, e.clientY, items);
-				return;
-			}
-		}
-
-		const hit = hitTest(stadium, world.x, world.y, zoom);
-		if (hit) {
-			showObjectContextMenu(e, hit);
-		}
+		openContextMenuAt(e);
 	});
 }
 
-function mouseEventFromTouch(event: TouchEvent): MouseEvent | null {
+function mouseEventFromTouch(
+	event: TouchEvent,
+	type: string,
+): MouseEvent | null {
 	const touch = firstTouch(event.changedTouches) ?? firstTouch(event.touches);
 	if (!touch) return null;
-	return new MouseEvent("mousemove", {
+	return mouseEventFromPoint(touch, type);
+}
+
+function mouseEventFromPoint(
+	point: { clientX: number; clientY: number },
+	type: string,
+): MouseEvent {
+	return new MouseEvent(type, {
 		bubbles: true,
 		cancelable: true,
 		button: 0,
-		clientX: touch.clientX,
-		clientY: touch.clientY,
+		clientX: point.clientX,
+		clientY: point.clientY,
 	});
 }
 
 function firstTouch(list: TouchList): Touch | null {
-	return list[0] ?? list.item(0);
+	return list[0] ?? list.item?.(0) ?? null;
+}
+
+function distanceBetweenTouches(touches: TouchList): number | null {
+	const first = firstTouch(touches);
+	const second = touches[1] ?? touches.item?.(1) ?? null;
+	if (!first || !second) return null;
+	return Math.hypot(
+		first.clientX - second.clientX,
+		first.clientY - second.clientY,
+	);
+}
+
+function midpointBetweenTouches(touches: TouchList): {
+	clientX: number;
+	clientY: number;
+} {
+	const first = firstTouch(touches);
+	const second = touches[1] ?? touches.item?.(1) ?? first;
+	if (!first || !second) return { clientX: 0, clientY: 0 };
+	return {
+		clientX: (first.clientX + second.clientX) / 2,
+		clientY: (first.clientY + second.clientY) / 2,
+	};
+}
+
+function movedBeyondLongPressTolerance(
+	mouseEvent: MouseEvent,
+	start: { clientX: number; clientY: number } | null,
+): boolean {
+	if (!start) return false;
+	return (
+		Math.hypot(
+			mouseEvent.clientX - start.clientX,
+			mouseEvent.clientY - start.clientY,
+		) > LONG_PRESS_MOVE_TOLERANCE
+	);
 }
