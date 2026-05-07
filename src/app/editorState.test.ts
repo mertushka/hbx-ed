@@ -48,6 +48,29 @@ describe("EditorState", () => {
 		expect(state.multiSelection).toBeNull();
 	});
 
+	it("supports explicit state setters and empty mutation/history guards", () => {
+		const state = new EditorState();
+
+		expect(state.saveMutation()).toBe(false);
+		expect(state.undo()).toBeNull();
+		expect(state.redo()).toBeNull();
+		expect(state.clearMultiSelection()).toBe(false);
+
+		const map = stadium("Assigned");
+		state.stadium = map;
+		state.selection = { type: "vertex", index: 0 };
+		state.multiSelection = { items: [{ type: "vertex", index: 0 }] };
+
+		expect(state.stadium).toBe(map);
+		expect(state.selection).toEqual({ type: "vertex", index: 0 });
+		expect(state.multiSelection).toEqual({
+			items: [{ type: "vertex", index: 0 }],
+		});
+		expect(state.clearMultiSelection()).toBe(true);
+		expect(state.multiSelection).toBeNull();
+		expect(state.selection).toEqual({ type: "vertex", index: 0 });
+	});
+
 	it("saves mutations and restores cloned undo/redo snapshots", () => {
 		const state = new EditorState();
 		state.load(stadium());

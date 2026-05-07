@@ -8,6 +8,8 @@ import {
 	normalizeStadium,
 	objectTypeToKey,
 	pasteClipboard,
+	reindexJointsAfterDiscDelete,
+	reindexSegmentsAfterVertexDelete,
 } from "./stadiumOps.ts";
 
 function stadium(): StadiumObject {
@@ -63,9 +65,22 @@ describe("stadiumOps", () => {
 		const pasted = pasteClipboard(s, clipboard);
 		expect(pasted).toEqual({ type: "goal", index: 1 });
 		expect(s.goals[1]).toEqual({ p0: [15, 15], p1: [15, 25] });
+
+		const discClipboard = cloneForClipboard(s, { type: "disc", index: 0 });
+		const pastedDisc = pasteClipboard(s, discClipboard);
+		expect(pastedDisc).toEqual({ type: "disc", index: 3 });
+		expect(s.discs[3]).toEqual({ pos: [15, 15] });
+
+		const planeClipboard = cloneForClipboard(s, { type: "plane", index: 0 });
+		expect(planeClipboard).toBeNull();
 	});
 
 	it("rejects clipboard entries with unknown object types", () => {
+		const s = stadium();
+		expect(cloneForClipboard(s, null)).toBeNull();
+		expect(duplicateSelection(s, null)).toBeNull();
+		expect(duplicateSelection(s, { type: "vertex", index: 99 })).toBeNull();
+		expect(pasteClipboard(s, null)).toBeNull();
 		expect(pasteClipboard(stadium(), { type: "unknown", data: {} })).toBeNull();
 	});
 
@@ -89,5 +104,26 @@ describe("stadiumOps", () => {
 			{ d0: 0, d1: -1 },
 			{ d0: -1, d1: 1 },
 		]);
+	});
+
+	it("normalizes repeated delete indices and remaps undefined refs", () => {
+		const s = stadium();
+		s.segments.push({ v0: undefined as unknown as number, v1: 2 });
+		s.joints.push({ d0: undefined as unknown as number, d1: 2 });
+
+		expect(
+			deleteSelections(s, [
+				{ type: "vertex", index: 0 },
+				{ type: "vertex", index: 0 },
+				{ type: "vertex", index: 99 },
+			]),
+		).toBe(1);
+		expect(s.vertexes).toHaveLength(2);
+
+		reindexSegmentsAfterVertexDelete(s, [1]);
+		reindexJointsAfterDiscDelete(s, [1]);
+
+		expect(s.segments.at(-1)).toEqual({ v0: -1, v1: -1 });
+		expect(s.joints.at(-1)).toEqual({ d0: -1, d1: 1 });
 	});
 });

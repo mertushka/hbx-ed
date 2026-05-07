@@ -99,11 +99,12 @@ export function deleteSelections(
 		groups.get(type)?.push(index);
 	}
 
+	let deletedCount = 0;
 	for (const [type, indices] of groups) {
-		deleteByType(stadium, type, indices);
+		deletedCount += deleteByType(stadium, type, indices);
 	}
 
-	return selections.length;
+	return deletedCount;
 }
 
 export function reindexSegmentsAfterVertexDelete(
@@ -132,19 +133,23 @@ function deleteByType(
 	stadium: StadiumObject,
 	type: ObjectType,
 	indices: readonly number[],
-): void {
+): number {
 	const normalized = normalizeDeletedIndices(indices);
 	const arr = stadium[objectTypeToKey(type)] as unknown[];
+	const removedIndices: number[] = [];
 
 	for (let i = normalized.length - 1; i >= 0; i--) {
 		const index = normalized[i];
 		if (index !== undefined && index >= 0 && index < arr.length) {
 			arr.splice(index, 1);
+			removedIndices.push(index);
 		}
 	}
 
-	if (type === "vertex") reindexSegmentsAfterVertexDelete(stadium, normalized);
-	if (type === "disc") reindexJointsAfterDiscDelete(stadium, normalized);
+	if (type === "vertex")
+		reindexSegmentsAfterVertexDelete(stadium, removedIndices);
+	if (type === "disc") reindexJointsAfterDiscDelete(stadium, removedIndices);
+	return removedIndices.length;
 }
 
 function appendOffsetCopy(

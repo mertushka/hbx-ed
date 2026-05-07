@@ -168,4 +168,35 @@ describe("drawEditorOverlays", () => {
 		expect(ctx.fillText).not.toHaveBeenCalled();
 		expect(ctx.arc).not.toHaveBeenCalled();
 	});
+
+	it("skips stale multi-selection references safely", () => {
+		const ctx = mockContext();
+		const s = stadium();
+
+		drawEditorOverlays(
+			ctx,
+			s,
+			{
+				showVertexLabels: false,
+				showSpawnPoints: false,
+				segPreview: null,
+				multiSelection: {
+					items: [
+						{ type: "vertex", index: 99 },
+						{ type: "disc", index: 99 },
+						{ type: "goal", index: 99 },
+						{ type: "segment", index: 99 },
+						{ type: "segment", index: 0 },
+					],
+				},
+				boxSelect: null,
+				vertexSnapTarget: null,
+			},
+			1,
+		);
+
+		expect(ctx.arc).not.toHaveBeenCalled();
+		expect(ctx.moveTo).toHaveBeenCalledWith(1, 2);
+		expect(ctx.lineTo).toHaveBeenCalledWith(11, 12);
+	});
 });

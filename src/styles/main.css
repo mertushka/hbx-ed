@@ -122,8 +122,26 @@ body {
 	display: none;
 }
 
-#copyright {
+#github-link {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 18px;
+	height: 18px;
 	margin-left: auto;
+	color: var(--text2);
+	border-radius: 4px;
+	transition:
+		color 0.12s,
+		background 0.12s;
+}
+
+#github-link:hover {
+	color: var(--text);
+	background: var(--panel2);
+}
+
+#copyright {
 	font-size: 10px;
 }
 

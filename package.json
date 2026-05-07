@@ -1,7 +1,7 @@
 {
 	"name": "hbx-ed",
 	"private": true,
-	"version": "0.0.5",
+	"version": "0.0.6",
 	"description": "Browser-based HaxBall stadium editor for .hbs files.",
 	"license": "MIT",
 	"author": "mertushka",

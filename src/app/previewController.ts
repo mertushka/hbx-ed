@@ -1,6 +1,11 @@
 import { Camera } from "../core/camera.ts";
 import { PreviewRenderer } from "../renderer/previewRenderer.ts";
 import type { StadiumObject } from "../types/stadium.ts";
+import {
+	distanceBetweenTouches,
+	firstTouch,
+	midpointBetweenTouches,
+} from "./touchGestures.ts";
 
 export interface PreviewControllerOptions {
 	canvas: HTMLCanvasElement;
@@ -121,8 +126,10 @@ export class PreviewController {
 		let panning = false;
 		let panStart = { x: 0, y: 0 };
 		let camOrigin = { x: 0, y: 0 };
+		let pinchDistance: number | null = null;
 		const stopPanning = (): void => {
 			panning = false;
+			pinchDistance = null;
 			this.canvas.style.cursor = "grab";
 		};
 
@@ -144,9 +151,16 @@ export class PreviewController {
 			"touchstart",
 			(e) => {
 				e.preventDefault();
+				if (e.touches.length > 1) {
+					panning = false;
+					pinchDistance = distanceBetweenTouches(e.touches);
+					this.canvas.style.cursor = "grab";
+					return;
+				}
 				const touch = firstTouch(e.touches);
-				if (!touch || e.touches.length > 1) return;
+				if (!touch) return;
 				panning = true;
+				pinchDistance = null;
 				panStart = { x: touch.clientX, y: touch.clientY };
 				camOrigin = { x: this.camera.x, y: this.camera.y };
 				this.canvas.style.cursor = "grabbing";
@@ -157,7 +171,18 @@ export class PreviewController {
 			"touchmove",
 			(e) => {
 				e.preventDefault();
-				if (!panning || e.touches.length > 1) return;
+				if (e.touches.length > 1) {
+					panning = false;
+					const distance = distanceBetweenTouches(e.touches);
+					if (distance === null) return;
+					if (pinchDistance !== null && pinchDistance > 0) {
+						this.zoomAtTouchMidpoint(distance / pinchDistance, e.touches);
+					}
+					pinchDistance = distance;
+					return;
+				}
+				pinchDistance = null;
+				if (!panning) return;
 				const touch = firstTouch(e.touches);
 				if (!touch) return;
 				this.panTo(touch.clientX, touch.clientY, panStart, camOrigin);
@@ -196,8 +221,17 @@ export class PreviewController {
 		this.camera.y = camOrigin.y - (clientY - panStart.y) / this.camera.zoom;
 		this.render();
 	}
-}
 
-function firstTouch(list: TouchList): Touch | null {
-	return list[0] ?? list.item(0);
+	private zoomAtTouchMidpoint(factor: number, touches: TouchList): void {
+		const midpoint = midpointBetweenTouches(touches);
+		const rect = this.canvas.getBoundingClientRect();
+		const world = this.camera.screenToWorld(
+			midpoint.clientX - rect.left,
+			midpoint.clientY - rect.top,
+			this.renderer.width,
+			this.renderer.height,
+		);
+		this.camera.zoomAt(factor, world.x, world.y);
+		this.render();
+	}
 }

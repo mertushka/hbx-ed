@@ -106,6 +106,27 @@ describe("editor primitive drawing", () => {
 		expect(invisibleCtx.setLineDash).toHaveBeenCalledWith([]);
 		expect(invisibleCtx.styles.strokeStyle).toBe("rgba(255,255,255,0.14)");
 		expect(invisibleCtx.styles.lineWidth).toBe(0.5);
+
+		const selectedInvisibleCtx = mockContext();
+		drawEditorSegment(
+			selectedInvisibleCtx,
+			{ v0: 0, v1: 1, vis: false },
+			verts,
+			{},
+			true,
+			2,
+		);
+		expect(selectedInvisibleCtx.styles.strokeStyle).toBe("#f5a623");
+		expect(selectedInvisibleCtx.styles.lineWidth).toBe(2);
+	});
+
+	it("skips segments with missing endpoint references", () => {
+		const ctx = mockContext();
+
+		drawEditorSegment(ctx, { v0: 0, v1: 9 }, verts, {}, false, 2);
+
+		expect(ctx.moveTo).not.toHaveBeenCalled();
+		expect(ctx.stroke).not.toHaveBeenCalled();
 	});
 
 	it("draws curved segments and preserves negative-curve direction", () => {
@@ -133,6 +154,16 @@ describe("editor primitive drawing", () => {
 		expect(ctx.styles.lineWidth).toBe(1);
 	});
 
+	it("still strokes transparent discs without filling them", () => {
+		const ctx = mockContext();
+
+		drawEditorDisc(ctx, { color: "transparent" }, {}, true, 2);
+
+		expect(ctx.arc).toHaveBeenCalledWith(0, 0, 10, 0, Math.PI * 2);
+		expect(ctx.fill).not.toHaveBeenCalled();
+		expect(ctx.styles.strokeStyle).toBe("#f5a623");
+	});
+
 	it("draws goals with team colors and selection highlight", () => {
 		const redCtx = mockContext();
 
@@ -148,6 +179,10 @@ describe("editor primitive drawing", () => {
 
 		expect(selectedCtx.styles.strokeStyle).toBe("#f5a623");
 		expect(selectedCtx.styles.lineWidth).toBe(2);
+
+		const blueCtx = mockContext();
+		drawEditorGoal(blueCtx, { p0: [1, 2], p1: [3, 4], team: "blue" }, false, 2);
+		expect(blueCtx.styles.strokeStyle).toBe("#4d9eff");
 	});
 
 	it("draws planes using viewport-scaled extents and normal arrows", () => {
@@ -203,5 +238,11 @@ describe("editor primitive drawing", () => {
 		expect(curvedCtx.setLineDash).toHaveBeenCalledWith([]);
 		expect(curvedCtx.closePath).toHaveBeenCalled();
 		expect(curvedCtx.styles.fillStyle).toBe("rgba(245,166,35,0.9)");
+
+		const negativeCtx = mockContext();
+		drawEditorCurveHandle(negativeCtx, { v0: 0, v1: 1, curve: -90 }, verts, 2);
+
+		expect(negativeCtx.setLineDash).toHaveBeenCalledWith([1.5, 1.5]);
+		expect(negativeCtx.closePath).toHaveBeenCalled();
 	});
 });

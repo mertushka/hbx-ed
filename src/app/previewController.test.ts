@@ -53,6 +53,39 @@ function touchEvent(type: string, x: number, y: number): Event {
 	return event;
 }
 
+function multiTouchEvent(type: string, points: [number, number][]): Event {
+	const event = new Event(type, { bubbles: true, cancelable: true });
+	const touches = points.map(([clientX, clientY]) => ({ clientX, clientY }));
+	Object.defineProperties(event, {
+		touches: { value: touches },
+		changedTouches: { value: touches },
+	});
+	return event;
+}
+
+function emptyTouchEvent(type: string): Event {
+	const event = new Event(type, { bubbles: true, cancelable: true });
+	Object.defineProperties(event, {
+		touches: { value: [] },
+		changedTouches: { value: [] },
+	});
+	return event;
+}
+
+function incompletePinchEvent(type: string): Event {
+	const event = new Event(type, { bubbles: true, cancelable: true });
+	const touches = {
+		0: { clientX: 100, clientY: 100 },
+		length: 2,
+		item: () => null,
+	};
+	Object.defineProperties(event, {
+		touches: { value: touches },
+		changedTouches: { value: touches },
+	});
+	return event;
+}
+
 function setup(current: StadiumObject | null = stadium()) {
 	document.body.innerHTML = `
 		<button id="open"></button>
@@ -152,6 +185,22 @@ describe("PreviewController", () => {
 		expect(touchMove.defaultPrevented).toBe(true);
 		expect(canvas.style.cursor).toBe("grab");
 
+		const internals = controller as unknown as { camera: { zoom: number } };
+		const zoomBeforePinch = internals.camera.zoom;
+		canvas.dispatchEvent(
+			multiTouchEvent("touchstart", [
+				[100, 100],
+				[200, 100],
+			]),
+		);
+		canvas.dispatchEvent(
+			multiTouchEvent("touchmove", [
+				[100, 100],
+				[250, 100],
+			]),
+		);
+		expect(internals.camera.zoom).toBeGreaterThan(zoomBeforePinch);
+
 		canvas.dispatchEvent(
 			new WheelEvent("wheel", {
 				clientX: 100,
@@ -174,6 +223,32 @@ describe("PreviewController", () => {
 
 		expect(downloads).toEqual(["Preview_Test.png"]);
 		expect(toast).toHaveBeenCalledWith("Exported Preview_Test.png");
+	});
+
+	it("guards touch panning and pinch edge cases", () => {
+		const { canvas, controller } = setup();
+		document.getElementById("open")?.click();
+		const internals = controller as unknown as { camera: { zoom: number } };
+		const zoomBefore = internals.camera.zoom;
+
+		const emptyStart = emptyTouchEvent("touchstart");
+		canvas.dispatchEvent(emptyStart);
+		expect(emptyStart.defaultPrevented).toBe(true);
+		expect(canvas.style.cursor).toBe("grab");
+
+		const singleMoveWithoutPan = touchEvent("touchmove", 30, 20);
+		canvas.dispatchEvent(singleMoveWithoutPan);
+		expect(singleMoveWithoutPan.defaultPrevented).toBe(true);
+
+		const badPinch = incompletePinchEvent("touchmove");
+		canvas.dispatchEvent(badPinch);
+		expect(badPinch.defaultPrevented).toBe(true);
+		expect(internals.camera.zoom).toBe(zoomBefore);
+
+		canvas.dispatchEvent(touchEvent("touchstart", 10, 10));
+		expect(canvas.style.cursor).toBe("grabbing");
+		canvas.dispatchEvent(touchEvent("touchcancel", 10, 10));
+		expect(canvas.style.cursor).toBe("grab");
 	});
 
 	it("ignores render, resize, fit, and export when closed or unloaded", () => {

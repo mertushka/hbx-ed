@@ -64,6 +64,39 @@ function touchEvent(type: string, x: number, y: number): Event {
 	return event;
 }
 
+function multiTouchEvent(type: string, points: [number, number][]): Event {
+	const event = new Event(type, { bubbles: true, cancelable: true });
+	const touches = points.map(([clientX, clientY]) => ({ clientX, clientY }));
+	Object.defineProperties(event, {
+		touches: { value: touches },
+		changedTouches: { value: touches },
+	});
+	return event;
+}
+
+function emptyTouchEvent(type: string): Event {
+	const event = new Event(type, { bubbles: true, cancelable: true });
+	Object.defineProperties(event, {
+		touches: { value: [] },
+		changedTouches: { value: [] },
+	});
+	return event;
+}
+
+function incompletePinchEvent(type: string): Event {
+	const event = new Event(type, { bubbles: true, cancelable: true });
+	const touches = {
+		0: { clientX: 100, clientY: 100 },
+		length: 2,
+		item: () => null,
+	};
+	Object.defineProperties(event, {
+		touches: { value: touches },
+		changedTouches: { value: touches },
+	});
+	return event;
+}
+
 function setup(options: { world?: WorldPoint; activeName?: string } = {}) {
 	document.body.innerHTML = `
 		<canvas id="canvas"></canvas>
@@ -175,6 +208,117 @@ describe("bindCanvasEvents", () => {
 		expect(pan.move).toHaveBeenCalledWith(state.world, expect.any(MouseEvent));
 		expect(active.up).toHaveBeenCalledWith(state.world, expect.any(MouseEvent));
 		expect(pan.up).toHaveBeenCalledWith(state.world, expect.any(MouseEvent));
+	});
+
+	it("pinch-zooms around the touch midpoint without starting the active tool", () => {
+		const { active, actions, canvas } = setup({
+			world: { x: 12, y: 34 },
+		});
+
+		const start = multiTouchEvent("touchstart", [
+			[100, 100],
+			[200, 100],
+		]);
+		const move = multiTouchEvent("touchmove", [
+			[100, 100],
+			[250, 100],
+		]);
+
+		canvas.dispatchEvent(start);
+		canvas.dispatchEvent(move);
+
+		expect(start.defaultPrevented).toBe(true);
+		expect(move.defaultPrevented).toBe(true);
+		expect(active.down).not.toHaveBeenCalled();
+		expect(actions.zoomAt).toHaveBeenCalledWith(1.5, 12, 34);
+		expect(actions.render).toHaveBeenCalledOnce();
+	});
+
+	it("finishes a synthetic single-touch drag before switching to pinch", () => {
+		const { active, canvas, pan } = setup({
+			world: { x: 12, y: 34 },
+		});
+
+		canvas.dispatchEvent(touchEvent("touchstart", 100, 120));
+		canvas.dispatchEvent(
+			multiTouchEvent("touchstart", [
+				[100, 100],
+				[200, 100],
+			]),
+		);
+		canvas.dispatchEvent(touchEvent("touchend", 200, 100));
+
+		expect(active.down).toHaveBeenCalledOnce();
+		expect(active.up).toHaveBeenCalledOnce();
+		expect(pan.up).toHaveBeenCalledOnce();
+	});
+
+	it("ignores touch starts without a usable touch point", () => {
+		const { active, canvas } = setup();
+		const event = emptyTouchEvent("touchstart");
+
+		canvas.dispatchEvent(event);
+
+		expect(event.defaultPrevented).toBe(true);
+		expect(active.down).not.toHaveBeenCalled();
+	});
+
+	it("ignores incomplete pinch gestures without zooming", () => {
+		const { actions, canvas } = setup();
+		const event = incompletePinchEvent("touchmove");
+
+		canvas.dispatchEvent(event);
+
+		expect(event.defaultPrevented).toBe(true);
+		expect(actions.zoomAt).not.toHaveBeenCalled();
+		expect(actions.render).not.toHaveBeenCalled();
+	});
+
+	it("opens a context menu from long-press on the select tool", async () => {
+		const { active, actions, canvas, pan } = setup({
+			world: { x: 30, y: 40 },
+		});
+
+		canvas.dispatchEvent(touchEvent("touchstart", 100, 120));
+		await new Promise((resolve) => setTimeout(resolve, 570));
+
+		expect(actions.showObjectContextMenu).toHaveBeenCalledWith(
+			expect.any(MouseEvent),
+			{ type: "vertex", index: 0 },
+		);
+		expect(active.up).toHaveBeenCalledOnce();
+		expect(pan.up).toHaveBeenCalledOnce();
+
+		canvas.dispatchEvent(touchEvent("touchend", 100, 120));
+
+		expect(active.up).toHaveBeenCalledOnce();
+		expect(pan.up).toHaveBeenCalledOnce();
+	});
+
+	it("cancels long-press context menus after meaningful touch movement", async () => {
+		const { actions, canvas } = setup({
+			world: { x: 30, y: 40 },
+		});
+
+		canvas.dispatchEvent(touchEvent("touchstart", 100, 120));
+		canvas.dispatchEvent(touchEvent("touchmove", 120, 140));
+		await new Promise((resolve) => setTimeout(resolve, 570));
+
+		expect(actions.showObjectContextMenu).not.toHaveBeenCalled();
+		expect(actions.showContextMenu).not.toHaveBeenCalled();
+	});
+
+	it("does not schedule long-press menus outside the select tool", async () => {
+		const { actions, canvas } = setup({
+			activeName: "disc",
+			world: { x: 30, y: 40 },
+		});
+
+		canvas.dispatchEvent(touchEvent("touchstart", 100, 120));
+		await new Promise((resolve) => setTimeout(resolve, 570));
+
+		expect(actions.showObjectContextMenu).not.toHaveBeenCalled();
+		expect(actions.showContextMenu).not.toHaveBeenCalled();
 	});
 
 	it("does not double-route pan movement when pan is the active tool", () => {
