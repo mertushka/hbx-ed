@@ -75,6 +75,28 @@ describe("drawEditorBackground", () => {
 		expect(ctx.stroke).toHaveBeenCalled();
 	});
 
+	it("draws custom solid backgrounds without texture patterns", () => {
+		const ctx = mockContext();
+
+		drawEditorBackground(
+			ctx,
+			{
+				type: "custom" as Background["type"],
+				width: 80,
+				height: 40,
+				cornerRadius: 4,
+				color: "112233",
+			},
+			camera(),
+			null,
+			{ width: 240, height: 160 },
+		);
+
+		expect(ctx.arcTo).toHaveBeenCalled();
+		expect(ctx.fill).toHaveBeenCalledOnce();
+		expect(ctx.stroke).toHaveBeenCalled();
+	});
+
 	it("draws hockey concrete fill and side goal-line arcs", () => {
 		const ctx = mockContext();
 		const cam = camera();
@@ -117,5 +139,43 @@ describe("drawEditorBackground", () => {
 		expect(ctx.lineTo).toHaveBeenCalledWith(80, 50);
 		expect(ctx.moveTo).toHaveBeenCalledWith(-80, -50);
 		expect(ctx.lineTo).toHaveBeenCalledWith(-80, 50);
+	});
+
+	it("uses solid hockey fills when texture patterns are unavailable", () => {
+		const ctx = mockContext();
+
+		drawEditorBackground(
+			ctx,
+			{
+				type: "hockey",
+				width: 100,
+				height: 50,
+				kickOffRadius: 25,
+				cornerRadius: 80,
+				goalLine: 20,
+			},
+			camera(),
+			null,
+			{ width: 240, height: 160 },
+		);
+
+		expect(ctx.scale).not.toHaveBeenCalled();
+		expect(ctx.fill).toHaveBeenCalled();
+		expect(ctx.arc).toHaveBeenCalledWith(
+			0,
+			0,
+			25,
+			-Math.PI / 2,
+			Math.PI / 2,
+			false,
+		);
+		expect(ctx.arc).toHaveBeenCalledWith(
+			0,
+			0,
+			25,
+			-Math.PI / 2,
+			Math.PI / 2,
+			true,
+		);
 	});
 });
