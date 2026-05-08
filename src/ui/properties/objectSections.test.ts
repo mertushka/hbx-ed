@@ -167,6 +167,24 @@ describe("objectSections", () => {
 		expect(notify).toHaveBeenCalledTimes(10);
 	});
 
+	it("shows missing trait references so users can clear them", () => {
+		const s = stadium();
+		s.segments[0] = { v0: 0, v1: 0, trait: "ab" };
+		const notify = vi.fn();
+
+		renderSegmentSection(parent(), s, 0, notify, vi.fn());
+
+		const trait = control<HTMLSelectElement>("trait");
+		expect(trait.value).toBe("ab");
+		expect(trait.selectedOptions[0]?.textContent).toBe("ab (not defined)");
+
+		trait.value = "(none)";
+		trait.dispatchEvent(new Event("change"));
+
+		expect(s.segments[0]?.trait).toBeUndefined();
+		expect(notify).toHaveBeenCalledOnce();
+	});
+
 	it("renders disc fields and initializes optional position fields", () => {
 		const s = stadium();
 		s.discs[0] = {};

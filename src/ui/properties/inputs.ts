@@ -246,12 +246,17 @@ export class SectionBuilder {
 		stadium: StadiumObject,
 		onChange: (v: string | undefined) => void,
 	): this {
-		const names = ["(none)", ...Object.keys(stadium.traits ?? {})];
+		const traitNames = Object.keys(stadium.traits ?? {});
+		const currentIsMissing =
+			current !== undefined && !traitNames.includes(current);
+		const names = ["(none)", ...traitNames];
+		if (currentIsMissing) names.push(current);
 		const sel = el("select", "prop-input");
 		for (const n of names) {
 			const o = el("option");
 			o.value = n;
-			o.textContent = n;
+			o.textContent =
+				currentIsMissing && n === current ? `${n} (not defined)` : n;
 			if (n === (current ?? "(none)")) o.selected = true;
 			sel.appendChild(o);
 		}

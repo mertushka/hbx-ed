@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { StadiumObject } from "../types/stadium.ts";
 import { renderValidationPanel } from "./validationPanel.ts";
@@ -75,15 +75,93 @@ describe("renderValidationPanel", () => {
 		expect(items.some((item) => item.classList.contains("warn"))).toBe(true);
 		expect(items[0]?.textContent).toContain("seg0");
 		expect(items.at(-1)?.textContent).toContain("goal0");
+
+		expect(
+			[
+				...document.querySelectorAll<HTMLButtonElement>(".validation-filter"),
+			].map((button) => button.textContent),
+		).toEqual(["All 10", "Errors 3", "Warnings 7"]);
+	});
+
+	it("filters problems by severity and preserves the selected filter on refresh", () => {
+		const panel = document.getElementById("validation-panel");
+		renderValidationPanel(panel, invalidStadium());
+
+		const errorsButton = document.querySelector<HTMLButtonElement>(
+			'[data-validation-filter="error"]',
+		);
+		const warningsButton = document.querySelector<HTMLButtonElement>(
+			'[data-validation-filter="warn"]',
+		);
+		if (!errorsButton || !warningsButton) {
+			throw new Error("Expected validation filter buttons");
+		}
+
+		errorsButton.click();
+		expect(errorsButton.classList.contains("active")).toBe(true);
+		expect(errorsButton.getAttribute("aria-pressed")).toBe("true");
+		expect(document.querySelectorAll(".validation-item")).toHaveLength(3);
+		expect(
+			[...document.querySelectorAll(".validation-item")].every((item) =>
+				item.classList.contains("error"),
+			),
+		).toBe(true);
+
+		warningsButton.click();
+		expect(warningsButton.classList.contains("active")).toBe(true);
+		expect(document.querySelectorAll(".validation-item")).toHaveLength(7);
+		expect(
+			[...document.querySelectorAll(".validation-item")].every((item) =>
+				item.classList.contains("warn"),
+			),
+		).toBe(true);
+
+		renderValidationPanel(panel, invalidStadium());
+
+		expect(
+			document
+				.querySelector<HTMLButtonElement>('[data-validation-filter="warn"]')
+				?.classList.contains("active"),
+		).toBe(true);
+		expect(document.querySelectorAll(".validation-item")).toHaveLength(7);
 	});
 
 	it("does not dismiss validation state by clicking an issue", () => {
 		const panel = document.getElementById("validation-panel");
-		renderValidationPanel(panel, invalidStadium());
+		const onSelectIssue = vi.fn();
+		renderValidationPanel(panel, invalidStadium(), { onSelectIssue });
 
 		document.querySelector<HTMLElement>(".validation-item")?.click();
 
 		expect(document.querySelectorAll(".validation-item")).toHaveLength(10);
+		expect(onSelectIssue).toHaveBeenCalledWith({ type: "segment", index: 0 });
+		expect(document.querySelector<HTMLElement>(".validation-item")?.title).toBe(
+			"Select segment #0",
+		);
+	});
+
+	it("selects all related objects for multi-target issues", () => {
+		const panel = document.getElementById("validation-panel");
+		const onSelectIssue = vi.fn();
+		const onSelectIssueTargets = vi.fn();
+		renderValidationPanel(panel, invalidStadium(), {
+			onSelectIssue,
+			onSelectIssueTargets,
+		});
+
+		const duplicateIssue = [
+			...document.querySelectorAll<HTMLElement>(".validation-item"),
+		].find((item) => item.textContent?.includes("duplicates seg2"));
+		if (!duplicateIssue) throw new Error("Expected duplicate segment issue");
+
+		duplicateIssue.click();
+
+		expect(onSelectIssue).not.toHaveBeenCalled();
+		expect(onSelectIssueTargets).toHaveBeenCalledWith([
+			{ type: "segment", index: 2 },
+			{ type: "segment", index: 3 },
+		]);
+		expect(duplicateIssue.title).toBe("Select segment #2 and segment #3");
 	});
 
 	it("preserves expanded state while validation refreshes", () => {
