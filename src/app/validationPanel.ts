@@ -173,7 +173,9 @@ function createValidationItem(
 
 	if (targets.length > 0) {
 		(item as HTMLButtonElement).type = "button";
-		item.title = formatIssueTargetTitle(targets);
+		const label = `${formatIssueTargetTitle(targets)} - ${issue.message}`;
+		item.title = label;
+		item.setAttribute("aria-label", label);
 		item.addEventListener("click", () => {
 			if (targets.length > 1 && options.onSelectIssueTargets) {
 				options.onSelectIssueTargets?.(targets);

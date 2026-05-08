@@ -135,8 +135,12 @@ describe("renderValidationPanel", () => {
 
 		expect(document.querySelectorAll(".validation-item")).toHaveLength(10);
 		expect(onSelectIssue).toHaveBeenCalledWith({ type: "segment", index: 0 });
-		expect(document.querySelector<HTMLElement>(".validation-item")?.title).toBe(
-			"Select segment #0",
+		const item = document.querySelector<HTMLElement>(".validation-item");
+		expect(item?.title).toBe(
+			"Select segment #0 - seg0: v1=99 out of range (2 verts)",
+		);
+		expect(item?.getAttribute("aria-label")).toBe(
+			"Select segment #0 - seg0: v1=99 out of range (2 verts)",
 		);
 	});
 
@@ -161,7 +165,9 @@ describe("renderValidationPanel", () => {
 			{ type: "segment", index: 2 },
 			{ type: "segment", index: 3 },
 		]);
-		expect(duplicateIssue.title).toBe("Select segment #2 and segment #3");
+		expect(duplicateIssue.title).toBe(
+			"Select segment #2 and segment #3 - seg3: duplicates seg2 (same vertices v0-v1)",
+		);
 	});
 
 	it("preserves expanded state while validation refreshes", () => {
