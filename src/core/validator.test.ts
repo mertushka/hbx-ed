@@ -34,15 +34,26 @@ describe("validateStadium", () => {
 			}),
 		);
 
-		expect(
-			issues.some((i) => i.message.includes("share the same vertices")),
-		).toBe(true);
+		const duplicateIssue = issues.find((i) =>
+			i.message.includes("duplicates seg0"),
+		);
+		expect(duplicateIssue?.message).toBe(
+			"seg1: duplicates seg0 (same vertices v0-v1)",
+		);
+		expect(duplicateIssue?.target).toEqual({ type: "segment", index: 1 });
+		expect(duplicateIssue?.targets).toEqual([
+			{ type: "segment", index: 0 },
+			{ type: "segment", index: 1 },
+		]);
 		expect(issues.some((i) => i.message.includes("v0=-1 out of range"))).toBe(
 			true,
 		);
 		expect(issues.some((i) => i.message.includes("v1=99 out of range"))).toBe(
 			true,
 		);
+		expect(
+			issues.find((i) => i.message.includes("v0=-1 out of range"))?.target,
+		).toEqual({ type: "segment", index: 2 });
 	});
 
 	it("does not warn for duplicate curved segments", () => {
@@ -55,9 +66,7 @@ describe("validateStadium", () => {
 			}),
 		);
 
-		expect(
-			issues.some((i) => i.message.includes("share the same vertices")),
-		).toBe(false);
+		expect(issues.some((i) => i.message.includes("duplicates"))).toBe(false);
 	});
 
 	it("does not warn for duplicate curveF segments but still reports other issues", () => {
@@ -70,9 +79,7 @@ describe("validateStadium", () => {
 			}),
 		);
 
-		expect(
-			issues.some((i) => i.message.includes("share the same vertices")),
-		).toBe(false);
+		expect(issues.some((i) => i.message.includes("duplicates"))).toBe(false);
 		expect(issues.some((i) => i.message.includes('trait "missing"'))).toBe(
 			true,
 		);
@@ -96,6 +103,12 @@ describe("validateStadium", () => {
 		expect(issues.some((i) => i.message.includes("zero-length goal"))).toBe(
 			true,
 		);
+		expect(
+			issues.find((i) => i.message.includes("degenerate plane"))?.target,
+		).toEqual({ type: "plane", index: 0 });
+		expect(
+			issues.find((i) => i.message.includes("zero-length goal"))?.target,
+		).toEqual({ type: "goal", index: 0 });
 	});
 
 	it("reports invalid joint refs and self-joints", () => {
@@ -113,5 +126,8 @@ describe("validateStadium", () => {
 		expect(issues.some((i) => i.message.includes("d1=9 out of range"))).toBe(
 			true,
 		);
+		expect(
+			issues.find((i) => i.message.includes("self-joint"))?.target,
+		).toEqual({ type: "joint", index: 0 });
 	});
 });

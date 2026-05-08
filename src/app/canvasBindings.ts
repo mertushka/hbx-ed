@@ -25,6 +25,7 @@ export interface CanvasBindingsOptions {
 	getStadium: () => StadiumObject | null;
 	getZoom: () => number;
 	zoomAt: (factor: number, anchorX: number, anchorY: number) => void;
+	cancelCameraAnimation?: () => void;
 	render: () => void;
 	setCoords: (x: number, y: number) => void;
 	showContextMenu: (x: number, y: number, items: MenuDef) => void;
@@ -41,6 +42,7 @@ export function bindCanvasEvents({
 	getStadium,
 	getZoom,
 	zoomAt,
+	cancelCameraAnimation = () => undefined,
 	render,
 	setCoords,
 	showContextMenu,
@@ -89,6 +91,7 @@ export function bindCanvasEvents({
 	};
 
 	canvas.addEventListener("mousedown", (e) => {
+		cancelCameraAnimation();
 		if (e.button === 1 || (e.button === 0 && e.altKey)) {
 			getPanTool()?.onMouseDown?.(getWorldPos(e), e);
 			return;
@@ -102,6 +105,7 @@ export function bindCanvasEvents({
 		"touchstart",
 		(e) => {
 			e.preventDefault();
+			cancelCameraAnimation();
 			clearLongPress();
 			if (e.touches.length > 1) {
 				if (lastTouchEvent) finishSyntheticTouch(lastTouchEvent);
@@ -220,6 +224,7 @@ export function bindCanvasEvents({
 		"wheel",
 		(e) => {
 			e.preventDefault();
+			cancelCameraAnimation();
 			const factor = e.deltaY > 0 ? 0.85 : 1 / 0.85;
 			const world = getWorldPos(e);
 			zoomAt(factor, world.x, world.y);

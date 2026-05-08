@@ -123,6 +123,9 @@ function propInputFor(label: string): HTMLInputElement {
 
 interface AppInternals {
 	camera: {
+		x: number;
+		y: number;
+		zoom: number;
 		worldToScreen(
 			wx: number,
 			wy: number,
@@ -446,7 +449,7 @@ describe("App", () => {
 		).toBe(true);
 	});
 
-	it("loads files through the input, reports parse errors, and dismisses validation items", () => {
+	it("loads files through the input, reports parse errors, and keeps validation dock state persistent", () => {
 		const restoreFileReader = installFileReaderMock((file) =>
 			file.name === "bad.hbs"
 				? "{ bad"
@@ -485,10 +488,120 @@ describe("App", () => {
 			);
 			const issueCount = document.querySelectorAll(".validation-item").length;
 			expect(issueCount).toBeGreaterThan(0);
+			expect(
+				document.querySelector(".validation-summary-count")?.textContent,
+			).toContain("errors");
 
+			const dock =
+				document.querySelector<HTMLDetailsElement>(".validation-dock");
+			if (!dock) throw new Error("Expected validation dock");
+			dock.open = true;
 			document.querySelector<HTMLElement>(".validation-item")?.click();
 			expect(document.querySelectorAll(".validation-item")).toHaveLength(
-				issueCount - 1,
+				issueCount,
+			);
+			expect(dock.open).toBe(true);
+			expect(document.getElementById("status-sel")?.textContent).toBe(
+				"segment #0 selected",
+			);
+			expect(document.querySelector(".prop-section-title")?.textContent).toBe(
+				"Segment #0",
+			);
+		} finally {
+			restoreFileReader();
+		}
+	});
+
+	it("smoothly reveals offscreen objects selected from the object tree", async () => {
+		const restoreFileReader = installFileReaderMock(
+			() => `{
+			name: 'Far Object',
+			width: 100,
+			height: 50,
+			vertexes: [{ x: 5000, y: 5000 }],
+			segments: [],
+			goals: [],
+			discs: [],
+			planes: [],
+			joints: [],
+		}`,
+		);
+		try {
+			const app = new App();
+			const internals = appInternals(app);
+			const fileInput = document.getElementById(
+				"file-input",
+			) as HTMLInputElement;
+			Object.defineProperty(fileInput, "files", {
+				value: [new File([""], "far-object.hbs")],
+				configurable: true,
+			});
+			fileInput.dispatchEvent(new Event("change"));
+
+			const zoomBefore = internals.camera.zoom;
+			expect(internals.camera.x).toBe(0);
+			expect(internals.camera.y).toBe(0);
+
+			itemContaining("v0").click();
+
+			await vi.waitFor(() => {
+				expect(internals.camera.x).toBe(5000);
+				expect(internals.camera.y).toBe(5000);
+			});
+			expect(internals.camera.zoom).toBe(zoomBefore);
+			expect(document.getElementById("status-sel")?.textContent).toBe(
+				"vertex #0 selected",
+			);
+		} finally {
+			restoreFileReader();
+		}
+	});
+
+	it("multi-selects related objects from duplicate validation issues", () => {
+		const restoreFileReader = installFileReaderMock(
+			() => `{
+			name: 'Duplicate Segments',
+			width: 100,
+			height: 50,
+			vertexes: [{ x: 0, y: 0 }, { x: 20, y: 0 }],
+			segments: [{ v0: 0, v1: 1 }, { v0: 1, v1: 0 }],
+			goals: [],
+			discs: [],
+			planes: [],
+			joints: [],
+		}`,
+		);
+		try {
+			const app = new App();
+			const internals = appInternals(app);
+			const fileInput = document.getElementById(
+				"file-input",
+			) as HTMLInputElement;
+			Object.defineProperty(fileInput, "files", {
+				value: [new File([""], "duplicate-segments.hbs")],
+				configurable: true,
+			});
+			fileInput.dispatchEvent(new Event("change"));
+
+			const duplicateIssue = [
+				...document.querySelectorAll<HTMLElement>(".validation-item"),
+			].find((item) => item.textContent?.includes("duplicates seg0"));
+			if (!duplicateIssue) throw new Error("Expected duplicate segment issue");
+
+			duplicateIssue.click();
+
+			expect(internals.multiSelection?.items).toEqual([
+				{ type: "segment", index: 0 },
+				{ type: "segment", index: 1 },
+			]);
+			expect(document.getElementById("status-sel")?.textContent).toBe(
+				"2 objects selected",
+			);
+			expect(itemContaining("seg0").classList.contains("multi-selected")).toBe(
+				true,
+			);
+			expect(itemContaining("seg1").classList.contains("multi-selected")).toBe(
+				true,
 			);
 		} finally {
 			restoreFileReader();

@@ -8,6 +8,7 @@ import { NewStadiumController } from "./app/newStadiumController.ts";
 import { buildObjectContextMenuItems } from "./app/objectContextMenu.ts";
 import { PreviewController } from "./app/previewController.ts";
 import { SelectionController } from "./app/selectionController.ts";
+import { selectionRevealTarget } from "./app/selectionReveal.ts";
 import { createStadiumDownload } from "./app/stadiumDownload.ts";
 import { readStadiumFile } from "./app/stadiumFile.ts";
 import {
@@ -47,6 +48,12 @@ import { PropertiesPanel } from "./ui/PropertiesPanel.ts";
 import { StatusBar } from "./ui/StatusBar.ts";
 import { Toast } from "./ui/Toast.ts";
 
+const SELECTION_REVEAL_DURATION_MS = 180;
+
+function easeOutCubic(t: number): number {
+	return 1 - (1 - t) ** 3;
+}
+
 export class App {
 	// ── Core state ─────────────────────────────────────────────────────────────
 	private readonly editorState = new EditorState();
@@ -78,6 +85,9 @@ export class App {
 
 	// Clipboard for copy/paste
 	private clipboard: ClipboardEntry | null = null;
+
+	private revealAnimationFrame: number | null = null;
+	private revealAnimationToken = 0;
 
 	private get stadium(): StadiumObject | null {
 		return this.editorState.stadium;
@@ -228,6 +238,7 @@ export class App {
 	// ── Stadium lifecycle ──────────────────────────────────────────────────────
 
 	private loadStadium(data: StadiumObject): void {
+		this.cancelRevealAnimation();
 		const normalized = normalizeStadium(data);
 		this.editorState.load(normalized);
 		this.selectionController.clearMultiSelection();
@@ -263,6 +274,79 @@ export class App {
 
 	private select(sel: Selection | null): void {
 		this.selectionController.select(sel);
+		this.revealSelected(sel);
+	}
+
+	private selectValidationTargets(targets: Selection[]): void {
+		if (targets.length === 0) return;
+		if (targets.length === 1) {
+			this.select(targets[0] ?? null);
+			return;
+		}
+
+		this.selectionController.setMultiSelection({ items: targets });
+		this.selectionController.select(null);
+		this.revealSelected(targets[0] ?? null);
+	}
+
+	private revealSelected(sel: Selection | null): void {
+		this.cancelRevealAnimation();
+		const target = selectionRevealTarget(
+			this.camera,
+			this.stadium,
+			sel,
+			this.renderer.width,
+			this.renderer.height,
+		);
+		if (!target) return;
+
+		this.animateCameraTo(target.x, target.y);
+	}
+
+	private animateCameraTo(targetX: number, targetY: number): void {
+		const startX = this.camera.x;
+		const startY = this.camera.y;
+		const dx = targetX - startX;
+		const dy = targetY - startY;
+		const prefersReducedMotion =
+			window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
+
+		if (Math.hypot(dx, dy) < 0.5 || prefersReducedMotion) {
+			this.camera.x = targetX;
+			this.camera.y = targetY;
+			this.render();
+			return;
+		}
+
+		const token = ++this.revealAnimationToken;
+		const startedAt = performance.now();
+		const step = () => {
+			if (token !== this.revealAnimationToken) return;
+
+			const t = Math.min(
+				1,
+				(performance.now() - startedAt) / SELECTION_REVEAL_DURATION_MS,
+			);
+			const eased = easeOutCubic(t);
+			this.camera.x = startX + dx * eased;
+			this.camera.y = startY + dy * eased;
+			this.render();
+
+			if (t < 1) {
+				this.revealAnimationFrame = window.requestAnimationFrame(step);
+				return;
+			}
+			this.revealAnimationFrame = null;
+		};
+
+		this.revealAnimationFrame = window.requestAnimationFrame(step);
+	}
+
+	private cancelRevealAnimation(): void {
+		this.revealAnimationToken += 1;
+		if (this.revealAnimationFrame === null) return;
+		window.cancelAnimationFrame?.(this.revealAnimationFrame);
+		this.revealAnimationFrame = null;
 	}
 
 	private deleteSelected(): void {
@@ -403,6 +487,7 @@ export class App {
 
 	private fitView(): void {
 		if (!this.stadium) return;
+		this.cancelRevealAnimation();
 		this.camera.fitRect(
 			this.stadium.width,
 			this.stadium.height,
@@ -422,8 +507,11 @@ export class App {
 			getPanTool: () => this.tools.get("pan"),
 			getStadium: () => this.stadium,
 			getZoom: () => this.camera.zoom,
-			zoomAt: (factor, anchorX, anchorY) =>
-				this.camera.zoomAt(factor, anchorX, anchorY),
+			zoomAt: (factor, anchorX, anchorY) => {
+				this.cancelRevealAnimation();
+				this.camera.zoomAt(factor, anchorX, anchorY);
+			},
+			cancelCameraAnimation: () => this.cancelRevealAnimation(),
 			render: () => this.render(),
 			setCoords: (x, y) => this.statusBar.setCoords(x, y),
 			showContextMenu: (x, y, items) => this.contextMenu.show(x, y, items),
@@ -515,10 +603,12 @@ export class App {
 
 	private bindZoomButtons(): void {
 		this.getEl("#btn-zoom-in").addEventListener("click", () => {
+			this.cancelRevealAnimation();
 			this.camera.zoomAt(1.25, this.camera.x, this.camera.y);
 			this.render();
 		});
 		this.getEl("#btn-zoom-out").addEventListener("click", () => {
+			this.cancelRevealAnimation();
 			this.camera.zoomAt(1 / 1.25, this.camera.x, this.camera.y);
 			this.render();
 		});
@@ -610,6 +700,11 @@ export class App {
 		renderValidationPanel(
 			document.getElementById("validation-panel"),
 			this.stadium,
+			{
+				onSelectIssue: (selection) => this.select(selection),
+				onSelectIssueTargets: (selections) =>
+					this.selectValidationTargets(selections),
+			},
 		);
 	}
 

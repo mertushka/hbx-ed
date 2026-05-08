@@ -1,10 +1,12 @@
-import type { Segment, StadiumObject } from "../types/stadium.ts";
+import type { Segment, Selection, StadiumObject } from "../types/stadium.ts";
 
 export type Severity = "error" | "warn";
 
 export interface ValidationIssue {
 	severity: Severity;
 	message: string;
+	target?: Selection;
+	targets?: Selection[];
 }
 
 /** Validate a StadiumObject and return a list of issues. */
@@ -22,18 +24,21 @@ export function validateStadium(s: StadiumObject): ValidationIssue[] {
 			issues.push({
 				severity: "error",
 				message: `seg${i}: v0=${v0} out of range (${nVerts} verts)`,
+				target: { type: "segment", index: i },
 			});
 		}
 		if (v1 < 0 || v1 >= nVerts) {
 			issues.push({
 				severity: "error",
 				message: `seg${i}: v1=${v1} out of range (${nVerts} verts)`,
+				target: { type: "segment", index: i },
 			});
 		}
 		if (v0 === v1 && v0 >= 0) {
 			issues.push({
 				severity: "warn",
 				message: `seg${i}: v0 === v1 (zero-length segment)`,
+				target: { type: "segment", index: i },
 			});
 		}
 
@@ -47,7 +52,12 @@ export function validateStadium(s: StadiumObject): ValidationIssue[] {
 				if (isCurvedSegment(seg) || isCurvedSegment(other)) continue;
 				issues.push({
 					severity: "warn",
-					message: `seg${i} and seg${j} share the same vertices`,
+					message: `seg${j}: duplicates seg${i} (same vertices v${v0}-v${v1})`,
+					target: { type: "segment", index: j },
+					targets: [
+						{ type: "segment", index: i },
+						{ type: "segment", index: j },
+					],
 				});
 			}
 		}
@@ -57,6 +67,7 @@ export function validateStadium(s: StadiumObject): ValidationIssue[] {
 			issues.push({
 				severity: "warn",
 				message: `seg${i}: trait "${seg.trait}" not defined`,
+				target: { type: "segment", index: i },
 			});
 		}
 	});
@@ -69,18 +80,21 @@ export function validateStadium(s: StadiumObject): ValidationIssue[] {
 			issues.push({
 				severity: "error",
 				message: `joint${i}: d0=${d0} out of range (${nDiscs} discs)`,
+				target: { type: "joint", index: i },
 			});
 		}
 		if (d1 < 0 || d1 >= nDiscs) {
 			issues.push({
 				severity: "error",
 				message: `joint${i}: d1=${d1} out of range (${nDiscs} discs)`,
+				target: { type: "joint", index: i },
 			});
 		}
 		if (d0 === d1 && d0 >= 0) {
 			issues.push({
 				severity: "warn",
 				message: `joint${i}: d0 === d1 (self-joint)`,
+				target: { type: "joint", index: i },
 			});
 		}
 	});
@@ -91,6 +105,7 @@ export function validateStadium(s: StadiumObject): ValidationIssue[] {
 			issues.push({
 				severity: "warn",
 				message: `disc${i}: trait "${d.trait}" not defined`,
+				target: { type: "disc", index: i },
 			});
 		}
 	});
@@ -104,6 +119,7 @@ export function validateStadium(s: StadiumObject): ValidationIssue[] {
 			issues.push({
 				severity: "warn",
 				message: `v${i}: trait "${v.trait}" not defined`,
+				target: { type: "vertex", index: i },
 			});
 		}
 	});
@@ -115,6 +131,7 @@ export function validateStadium(s: StadiumObject): ValidationIssue[] {
 			issues.push({
 				severity: "error",
 				message: `plane${i}: normal is (0,0) — degenerate plane`,
+				target: { type: "plane", index: i },
 			});
 		}
 	});
@@ -127,6 +144,7 @@ export function validateStadium(s: StadiumObject): ValidationIssue[] {
 			issues.push({
 				severity: "warn",
 				message: `goal${i}: p0 === p1 (zero-length goal line)`,
+				target: { type: "goal", index: i },
 			});
 		}
 	});
