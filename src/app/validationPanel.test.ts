@@ -54,27 +54,51 @@ describe("renderValidationPanel", () => {
 		expect(panel?.children).toHaveLength(0);
 	});
 
-	it("renders at most five issues plus an overflow item", () => {
+	it("renders issues inside a collapsed statusbar problems dock", () => {
 		const panel = document.getElementById("validation-panel");
 
 		renderValidationPanel(panel, invalidStadium());
 
+		const dock = document.querySelector<HTMLDetailsElement>(".validation-dock");
+		expect(dock).not.toBeNull();
+		expect(dock?.open).toBe(false);
+		expect(
+			document.querySelector(".validation-summary-title")?.textContent,
+		).toBe("Problems");
+		expect(
+			document.querySelector(".validation-summary-count")?.textContent,
+		).toBe("3 errors | 7 warnings");
+
 		const items = [...document.querySelectorAll(".validation-item")];
-		expect(items).toHaveLength(6);
-		expect(items[0]?.classList.contains("warn")).toBe(false);
+		expect(items).toHaveLength(10);
+		expect(items[0]?.classList.contains("error")).toBe(true);
 		expect(items.some((item) => item.classList.contains("warn"))).toBe(true);
 		expect(items[0]?.textContent).toContain("seg0");
-		expect(items[5]?.textContent).toContain("more issues");
-		expect(items[0]?.getAttribute("title")).toBe("Click to dismiss");
+		expect(items.at(-1)?.textContent).toContain("goal0");
 	});
 
-	it("lets validation items dismiss themselves", () => {
+	it("does not dismiss validation state by clicking an issue", () => {
 		const panel = document.getElementById("validation-panel");
 		renderValidationPanel(panel, invalidStadium());
 
 		document.querySelector<HTMLElement>(".validation-item")?.click();
 
-		expect(document.querySelectorAll(".validation-item")).toHaveLength(5);
+		expect(document.querySelectorAll(".validation-item")).toHaveLength(10);
+	});
+
+	it("preserves expanded state while validation refreshes", () => {
+		const panel = document.getElementById("validation-panel");
+		renderValidationPanel(panel, invalidStadium());
+
+		const dock = document.querySelector<HTMLDetailsElement>(".validation-dock");
+		if (!dock) throw new Error("Expected validation dock");
+		dock.open = true;
+
+		renderValidationPanel(panel, invalidStadium());
+
+		expect(
+			document.querySelector<HTMLDetailsElement>(".validation-dock")?.open,
+		).toBe(true);
 	});
 
 	it("safely ignores missing panel elements", () => {

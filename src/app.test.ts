@@ -446,7 +446,7 @@ describe("App", () => {
 		).toBe(true);
 	});
 
-	it("loads files through the input, reports parse errors, and dismisses validation items", () => {
+	it("loads files through the input, reports parse errors, and keeps validation dock state persistent", () => {
 		const restoreFileReader = installFileReaderMock((file) =>
 			file.name === "bad.hbs"
 				? "{ bad"
@@ -485,11 +485,19 @@ describe("App", () => {
 			);
 			const issueCount = document.querySelectorAll(".validation-item").length;
 			expect(issueCount).toBeGreaterThan(0);
+			expect(
+				document.querySelector(".validation-summary-count")?.textContent,
+			).toContain("errors");
 
+			const dock =
+				document.querySelector<HTMLDetailsElement>(".validation-dock");
+			if (!dock) throw new Error("Expected validation dock");
+			dock.open = true;
 			document.querySelector<HTMLElement>(".validation-item")?.click();
 			expect(document.querySelectorAll(".validation-item")).toHaveLength(
-				issueCount - 1,
+				issueCount,
 			);
+			expect(dock.open).toBe(true);
 		} finally {
 			restoreFileReader();
 		}
