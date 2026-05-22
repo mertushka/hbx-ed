@@ -154,9 +154,7 @@ interface AppInternals {
 	renderer: {
 		multiSelection: MultiSelection | null;
 	};
-	rememberToolDefaultFromSelection(selection: Selection | null): void;
 	refresh(): void;
-	select(selection: Selection | null): void;
 	selection: Selection | null;
 	stadium: StadiumObject | null;
 }
@@ -631,10 +629,7 @@ describe("App", () => {
 			name: 'Tool Defaults',
 			width: 100,
 			height: 50,
-			traits: {
-				post: { bCoef: 0.4, cMask: ['ball'] },
-				wall: { color: '00ff00', bCoef: 0.2, cMask: ['ball', 'kick'] },
-			},
+			traits: { post: {}, wall: {} },
 			vertexes: [],
 			segments: [],
 			goals: [],
@@ -666,146 +661,9 @@ describe("App", () => {
 			canvasMouse("mousedown", 390, 200);
 			canvasMouse("mousedown", 410, 200);
 
-			expect(internals.stadium?.vertexes[0]).toMatchObject({
-				trait: "post",
-				bCoef: 0.4,
-				cMask: ["ball"],
-			});
-			expect(internals.stadium?.vertexes[1]).toMatchObject({
-				trait: "post",
-				bCoef: 0.4,
-				cMask: ["ball"],
-			});
-			expect(internals.stadium?.segments[0]).toMatchObject({
-				trait: "wall",
-				color: "00ff00",
-				bCoef: 0.2,
-				cMask: ["ball", "kick"],
-			});
-		} finally {
-			restoreFileReader();
-		}
-	});
-
-	it("reuses selected object properties when drawing another object of that type", () => {
-		const restoreFileReader = installFileReaderMock(
-			() => `{
-			name: 'Property Memory',
-			width: 100,
-			height: 50,
-			traits: { ballArea: {} },
-			vertexes: [],
-			segments: [],
-			goals: [],
-			discs: [{
-				pos: [10, 10],
-				radius: 25,
-				color: 'ffcc00',
-				bCoef: 0.2,
-				cMask: ['ball', 'kick', 'score'],
-				trait: 'ballArea',
-			}],
-			planes: [],
-			joints: [],
-		}`,
-		);
-		try {
-			const app = new App();
-			const internals = appInternals(app);
-			const fileInput = document.getElementById(
-				"file-input",
-			) as HTMLInputElement;
-			Object.defineProperty(fileInput, "files", {
-				value: [new File([""], "property-memory.hbs")],
-				configurable: true,
-			});
-			fileInput.dispatchEvent(new Event("change"));
-
-			internals.rememberToolDefaultFromSelection({ type: "disc", index: 9 });
-			itemContaining("disc0").click();
-			click('[data-tool="disc"]');
-			canvasMouse("mousedown", 400, 200);
-
-			expect(internals.stadium?.discs[1]).toMatchObject({
-				pos: [0, 0],
-				radius: 25,
-				color: "ffcc00",
-				bCoef: 0.2,
-				cMask: ["ball", "kick", "score"],
-				trait: "ballArea",
-			});
-
-			internals.select(null);
-			const discTrait = propSelectFor("disc trait");
-			discTrait.value = "(none)";
-			discTrait.dispatchEvent(new Event("change"));
-			const nextDiscPos = internals.camera.worldToScreen(10, 0, 800, 400);
-			canvasMouse("mousedown", nextDiscPos.x, nextDiscPos.y);
-
-			expect(internals.stadium?.discs[2]).toMatchObject({
-				pos: [10, 0],
-				radius: 25,
-				color: "ffcc00",
-				bCoef: 0.2,
-				cMask: ["ball", "kick", "score"],
-			});
-			expect(internals.stadium?.discs[2]?.trait).toBeUndefined();
-		} finally {
-			restoreFileReader();
-		}
-	});
-
-	it("applies selected disc tool trait values to the first added disc", () => {
-		const restoreFileReader = installFileReaderMock(
-			() => `{
-			name: 'Disc Trait Defaults',
-			width: 100,
-			height: 50,
-			traits: {
-				goalPost: {
-					radius: 8,
-					color: 'ffcc00',
-					bCoef: 0.5,
-					cMask: ['ball', 'kick'],
-					cGroup: ['score'],
-				},
-			},
-			vertexes: [],
-			segments: [],
-			goals: [],
-			discs: [],
-			planes: [],
-			joints: [],
-		}`,
-		);
-		try {
-			const app = new App();
-			const internals = appInternals(app);
-			const fileInput = document.getElementById(
-				"file-input",
-			) as HTMLInputElement;
-			Object.defineProperty(fileInput, "files", {
-				value: [new File([""], "disc-trait-defaults.hbs")],
-				configurable: true,
-			});
-			fileInput.dispatchEvent(new Event("change"));
-
-			const discTrait = propSelectFor("disc trait");
-			discTrait.value = "goalPost";
-			discTrait.dispatchEvent(new Event("change"));
-
-			click('[data-tool="disc"]');
-			canvasMouse("mousedown", 400, 200);
-
-			expect(internals.stadium?.discs[0]).toMatchObject({
-				pos: [0, 0],
-				radius: 8,
-				color: "ffcc00",
-				bCoef: 0.5,
-				cMask: ["ball", "kick"],
-				cGroup: ["score"],
-				trait: "goalPost",
-			});
+			expect(internals.stadium?.vertexes[0]?.trait).toBe("post");
+			expect(internals.stadium?.vertexes[1]?.trait).toBe("post");
+			expect(internals.stadium?.segments[0]?.trait).toBe("wall");
 		} finally {
 			restoreFileReader();
 		}

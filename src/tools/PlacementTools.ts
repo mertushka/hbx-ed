@@ -24,14 +24,13 @@ export class DiscTool implements Tool {
 
 		const p = snapToGrid(pos.x, pos.y, this.getZoom(), e.shiftKey);
 		const disc: Disc = {
+			pos: [Math.round(p.x), Math.round(p.y)],
 			radius: 10,
 			invMass: 1,
 			damping: 0.99,
 			color: "FFFFFF",
 			bCoef: 0.5,
 			cMask: ["all"],
-			...this.ctx.getToolDefaultObject("disc"),
-			pos: [Math.round(p.x), Math.round(p.y)],
 		};
 		const trait = this.ctx.getToolDefaultTrait("disc");
 		if (trait) disc.trait = trait;
@@ -64,12 +63,7 @@ export class GoalTool implements Tool {
 		const p = snapToGrid(pos.x, pos.y, this.getZoom(), e.shiftKey);
 		const x = Math.round(p.x),
 			y = Math.round(p.y);
-		const goal: Goal = {
-			team: "red",
-			...this.ctx.getToolDefaultObject("goal"),
-			p0: [x, y - 50],
-			p1: [x, y + 50],
-		};
+		const goal: Goal = { p0: [x, y - 50], p1: [x, y + 50], team: "red" };
 		const trait = this.ctx.getToolDefaultTrait("goal");
 		if (trait) goal.trait = trait;
 		stadium.goals.push(goal);
@@ -99,14 +93,11 @@ export class PlaneTool implements Tool {
 		}
 
 		const p = snapToGrid(pos.x, pos.y, this.getZoom(), e.shiftKey);
-		const defaults = this.ctx.getToolDefaultObject("plane");
-		const normal = defaults?.normal ?? ([0, 1] as [number, number]);
 		const plane: Plane = {
+			normal: [0, 1],
+			dist: Math.round(p.y),
 			bCoef: 1,
 			cMask: ["all", "red", "blue", "ball"],
-			...defaults,
-			normal,
-			dist: Math.round(p.x * normal[0] + p.y * normal[1]),
 		};
 		const trait = this.ctx.getToolDefaultTrait("plane");
 		if (trait) plane.trait = trait;

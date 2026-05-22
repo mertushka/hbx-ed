@@ -4,9 +4,7 @@ import type { ObjectType, Selection, StadiumObject } from "../types/stadium.ts";
 import {
 	getSelectionObject,
 	getSelectionTrait,
-	getTraitValuesForType,
 	setSelectionTrait,
-	syncTraitUsages,
 } from "./selectionTraits.ts";
 
 function stadium(): StadiumObject {
@@ -14,22 +12,6 @@ function stadium(): StadiumObject {
 		name: "Traits",
 		width: 100,
 		height: 50,
-		traits: {
-			ballArea: {
-				radius: 25,
-				color: "ffcc00",
-				bCoef: 0.2,
-				cMask: ["ball", "kick", "score"],
-				pos: [99, 99],
-			},
-			wallSegment: {
-				color: "00ff00",
-				bCoef: 0.3,
-				cMask: ["ball"],
-				v0: 9,
-				v1: 9,
-			},
-		},
 		vertexes: [{ x: 1, y: 2, trait: "wall" }],
 		segments: [{ v0: 0, v1: 0, trait: "wall" }],
 		discs: [{ pos: [0, 0], radius: 10, trait: "ball" }],
@@ -86,90 +68,5 @@ describe("selectionTraits", () => {
 		for (const type of missingTypes) {
 			expect(getSelectionObject(s, { type, index: 9 })).toBeNull();
 		}
-	});
-
-	it("applies trait values while preserving object geometry", () => {
-		const s = stadium();
-
-		expect(setSelectionTrait(s, { type: "disc", index: 0 }, "ballArea")).toBe(
-			true,
-		);
-		expect(s.discs[0]).toMatchObject({
-			pos: [0, 0],
-			radius: 25,
-			color: "ffcc00",
-			bCoef: 0.2,
-			cMask: ["ball", "kick", "score"],
-			trait: "ballArea",
-		});
-
-		expect(
-			setSelectionTrait(s, { type: "segment", index: 0 }, "wallSegment"),
-		).toBe(true);
-		expect(s.segments[0]).toMatchObject({
-			v0: 0,
-			v1: 0,
-			color: "00ff00",
-			bCoef: 0.3,
-			cMask: ["ball"],
-			trait: "wallSegment",
-		});
-
-		expect(getTraitValuesForType(null, "disc", "ballArea")).toBeUndefined();
-		expect(getTraitValuesForType(s, "disc", undefined)).toBeUndefined();
-	});
-
-	it("syncs edited trait values to objects that still track the previous value", () => {
-		const s = stadium();
-		const previousTrait = {
-			radius: 10,
-			color: "111111",
-			cMask: ["all"],
-			cGroup: ["wall"],
-		};
-		s.traits = {
-			ballArea: {
-				radius: 25,
-				color: "ffcc00",
-				cMask: ["ball", "kick"],
-			},
-		};
-		s.discs = [
-			{
-				pos: [0, 0],
-				trait: "ballArea",
-				radius: 10,
-				color: "111111",
-				cMask: ["all"],
-				cGroup: ["wall"],
-			},
-			{
-				pos: [1, 1],
-				trait: "ballArea",
-				radius: 99,
-				color: "222222",
-				cMask: ["all"],
-				cGroup: ["wall"],
-			},
-			{ pos: [2, 2], trait: "other", radius: 10 },
-		];
-
-		expect(syncTraitUsages(s, "ballArea", previousTrait)).toBe(2);
-		expect(s.discs[0]).toEqual({
-			pos: [0, 0],
-			trait: "ballArea",
-			radius: 25,
-			color: "ffcc00",
-			cMask: ["ball", "kick"],
-		});
-		expect(s.discs[1]).toEqual({
-			pos: [1, 1],
-			trait: "ballArea",
-			radius: 99,
-			color: "222222",
-			cMask: ["ball", "kick"],
-		});
-		expect(s.discs[2]).toEqual({ pos: [2, 2], trait: "other", radius: 10 });
-		expect(syncTraitUsages(s, "missing", previousTrait)).toBe(0);
 	});
 });

@@ -55,33 +55,6 @@ describe("JointTool", () => {
 		expect(harness.selection).toEqual({ type: "joint", index: 0 });
 	});
 
-	it("inherits remembered joint properties while keeping clicked discs", () => {
-		const stadium = createTestStadium({
-			discs: [
-				{ pos: [0, 0], radius: 10 },
-				{ pos: [40, 0], radius: 10 },
-			],
-		});
-		const harness = createToolContext(stadium);
-		harness.setToolDefaultObject("joint", {
-			length: [20, 80],
-			strength: 4,
-			color: "ff0000",
-		});
-		const tool = new JointTool(harness.ctx, () => 2);
-
-		tool.onMouseDown({ x: 0, y: 0 });
-		tool.onMouseDown({ x: 40, y: 0 });
-
-		expect(stadium.joints[0]).toEqual({
-			d0: 0,
-			d1: 1,
-			length: [20, 80],
-			strength: 4,
-			color: "ff0000",
-		});
-	});
-
 	it("updates the preview while waiting for the second disc", () => {
 		const stadium = createTestStadium({
 			discs: [{ pos: [5, 6], radius: 10 }],

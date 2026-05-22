@@ -105,7 +105,7 @@ describe("objectSections", () => {
 		expect(s.vertexes[0]).toMatchObject({
 			x: 42,
 			y: 24,
-			bCoef: 1,
+			bCoef: 0.7,
 			cMask: ["ball", "red"],
 			cGroup: ["wall"],
 		});
@@ -157,7 +157,7 @@ describe("objectSections", () => {
 			curve: 45,
 			vis: true,
 			color: "123ABC",
-			bCoef: 1,
+			bCoef: 0.8,
 			bias: 2,
 			cMask: ["blue"],
 			cGroup: ["wall", "kick"],
@@ -218,7 +218,7 @@ describe("objectSections", () => {
 			radius: 25,
 			invMass: 2,
 			damping: 0.8,
-			bCoef: 1,
+			bCoef: 0.9,
 			color: "FEDCBA",
 			cMask: ["red"],
 			cGroup: ["kick"],
@@ -251,7 +251,7 @@ describe("objectSections", () => {
 		expect(s.planes[0]).toMatchObject({
 			normal: [1, 0],
 			dist: 55,
-			bCoef: 1,
+			bCoef: 0.7,
 			cMask: ["all"],
 			cGroup: ["kick"],
 			trait: "metal",

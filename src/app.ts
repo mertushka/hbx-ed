@@ -16,17 +16,12 @@ import {
 	syncOverlayToggleButtons,
 } from "./app/toolbarBindings.ts";
 import {
-	extractToolObjectDefault,
 	getValidToolDefaultTrait,
-	getValidToolObjectDefault,
 	setToolDefaultTrait,
-	setToolObjectDefault,
 	type ToolDefaultTraits,
-	type ToolObjectDefaults,
 } from "./app/toolDefaults.ts";
 import { renderValidationPanel } from "./app/validationPanel.ts";
 import { Camera } from "./core/camera.ts";
-import { getTraitValuesForType } from "./core/selectionTraits.ts";
 import {
 	type ClipboardEntry,
 	cloneForClipboard,
@@ -98,7 +93,6 @@ export class App {
 	private clipboard: ClipboardEntry | null = null;
 
 	private readonly toolDefaultTraits: ToolDefaultTraits = {};
-	private readonly toolObjectDefaults: ToolObjectDefaults = {};
 	private objectTreeSelectionAnchor: Selection | null = null;
 
 	private revealAnimationFrame: number | null = null;
@@ -174,7 +168,6 @@ export class App {
 			() => {
 				// Save history and update canvas + tree, but do NOT rebuild the
 				// properties form — that would destroy the focused input mid-edit.
-				this.rememberToolDefaultFromSelection(this.selection);
 				this.saveMutation();
 				this.objectTree.render(
 					this.stadium,
@@ -188,7 +181,6 @@ export class App {
 				getToolDefaultTrait: (type) => this.getToolDefaultTrait(type),
 				setToolDefaultTrait: (type, trait) => {
 					setToolDefaultTrait(this.toolDefaultTraits, type, trait);
-					this.rememberToolDefaultTrait(type, trait);
 				},
 			},
 		);
@@ -244,7 +236,6 @@ export class App {
 			getMultiSelection: () => this.multiSelection,
 			setMultiSelection: (ms) => this.selectionController.setMultiSelection(ms),
 			getToolDefaultTrait: (type) => this.getToolDefaultTrait(type),
-			getToolDefaultObject: (type) => this.getToolDefaultObject(type),
 			saveHistory: () => {
 				this.saveMutation();
 			},
@@ -295,7 +286,6 @@ export class App {
 
 	private select(sel: Selection | null): void {
 		this.selectionController.select(sel);
-		this.rememberToolDefaultFromSelection(sel);
 		this.revealSelected(sel);
 	}
 
@@ -498,56 +488,6 @@ export class App {
 
 	private getToolDefaultTrait(type: ObjectType): string | undefined {
 		return getValidToolDefaultTrait(this.stadium, this.toolDefaultTraits, type);
-	}
-
-	private getToolDefaultObject<T extends ObjectType>(
-		type: T,
-	): ReturnType<typeof getValidToolObjectDefault<T>> {
-		return getValidToolObjectDefault(
-			this.stadium,
-			this.toolObjectDefaults,
-			this.toolDefaultTraits,
-			type,
-		);
-	}
-
-	private rememberToolDefaultFromSelection(selection: Selection | null): void {
-		if (!this.stadium || !selection) return;
-		const objectDefault = extractToolObjectDefault(this.stadium, selection);
-		if (!objectDefault) return;
-		setToolObjectDefault(
-			this.toolObjectDefaults,
-			selection.type,
-			objectDefault,
-		);
-		setToolDefaultTrait(
-			this.toolDefaultTraits,
-			selection.type,
-			"trait" in objectDefault && typeof objectDefault.trait === "string"
-				? objectDefault.trait
-				: undefined,
-		);
-	}
-
-	private rememberToolDefaultTrait(
-		type: ObjectType,
-		trait: string | undefined,
-	): void {
-		const next = trait
-			? {
-					...(getTraitValuesForType(this.stadium, type, trait) ?? {}),
-					trait,
-				}
-			: (structuredClone(this.toolObjectDefaults[type] ?? {}) as Record<
-					string,
-					unknown
-				>);
-		if (!trait) delete next.trait;
-		setToolObjectDefault(
-			this.toolObjectDefaults,
-			type,
-			next as Parameters<typeof setToolObjectDefault>[2],
-		);
 	}
 
 	private objectCount(type: ObjectType): number {

@@ -1,4 +1,3 @@
-import { syncTraitUsages } from "../../core/selectionTraits.ts";
 import type { StadiumObject } from "../../types/stadium.ts";
 import { colorToHex, hexToHbs } from "../../utils/color.ts";
 import type { ChangeCallback } from "./inputs.ts";
@@ -91,12 +90,6 @@ function renderOneTrait(
 	const block = document.createElement("div");
 	block.className = "prop-trait-block";
 	const traitRecord = trait as Record<string, unknown>;
-	const snapshotTrait = (): Record<string, unknown> =>
-		structuredClone(traitRecord);
-	const notifyTraitChange = (previousTrait: Record<string, unknown>): void => {
-		syncTraitUsages(s, name, previousTrait);
-		notify();
-	};
 
 	const header = document.createElement("div");
 	header.className = "prop-trait-header";
@@ -158,30 +151,26 @@ function renderOneTrait(
 					? String(traitRecord[field.key])
 					: "";
 			inp.addEventListener("change", () => {
-				const previousTrait = snapshotTrait();
 				const n = parseFloat(inp.value);
 				if (inp.value === "" || inp.value === "unset") {
 					delete traitRecord[field.key];
 				} else if (!Number.isNaN(n)) {
 					traitRecord[field.key] = n;
 				}
-				notifyTraitChange(previousTrait);
+				notify();
 			});
 			val.appendChild(inp);
 		} else if (field.type === "bool") {
-			val.appendChild(
-				renderTraitBoolInput(traitRecord, field.key, notifyTraitChange),
-			);
+			val.appendChild(renderTraitBoolInput(traitRecord, field.key, notify));
 		} else if (field.type === "flags") {
 			val.appendChild(
 				flagsInput(traitRecord[field.key] as string[] | undefined, (f) => {
-					const previousTrait = snapshotTrait();
 					traitRecord[field.key] = f;
-					notifyTraitChange(previousTrait);
+					notify();
 				}),
 			);
 		} else if (field.type === "color") {
-			val.appendChild(renderTraitColorInput(trait, notifyTraitChange));
+			val.appendChild(renderTraitColorInput(trait, notify));
 		}
 
 		row.appendChild(val);
@@ -202,7 +191,7 @@ function renderOneTrait(
 function renderTraitBoolInput(
 	trait: Record<string, unknown>,
 	key: string,
-	notify: (previousTrait: Record<string, unknown>) => void,
+	notify: ChangeCallback,
 ): HTMLElement {
 	const wrap = document.createElement("div");
 	wrap.style.display = "flex";
@@ -214,20 +203,18 @@ function renderTraitBoolInput(
 	cb.checked = (trait[key] as boolean | undefined) ?? true;
 	cb.indeterminate = trait[key] === undefined;
 	cb.addEventListener("change", () => {
-		const previousTrait = structuredClone(trait);
 		trait[key] = cb.checked;
 		cb.indeterminate = false;
-		notify(previousTrait);
+		notify();
 	});
 	const unset = document.createElement("button");
 	unset.className = "prop-trait-unset";
 	unset.textContent = "unset";
 	unset.title = "Remove this field from trait";
 	unset.addEventListener("click", () => {
-		const previousTrait = structuredClone(trait);
 		delete trait[key];
 		cb.indeterminate = true;
-		notify(previousTrait);
+		notify();
 	});
 	wrap.appendChild(cb);
 	wrap.appendChild(unset);
@@ -236,7 +223,7 @@ function renderTraitBoolInput(
 
 function renderTraitColorInput(
 	trait: NonNullable<StadiumObject["traits"]>[string],
-	notify: (previousTrait: Record<string, unknown>) => void,
+	notify: ChangeCallback,
 ): HTMLElement {
 	const hexStr =
 		trait.color !== undefined ? colorToHex(trait.color as never) : "#000000";
@@ -257,24 +244,22 @@ function renderTraitColorInput(
 	txt.placeholder = "unset";
 	txt.value = trait.color !== undefined ? hexStr.slice(1) : "";
 	const update = (h: string): void => {
-		const previousTrait = structuredClone(trait) as Record<string, unknown>;
 		trait.color = h;
 		swatch.style.background = `#${h}`;
 		picker.value = `#${h}`;
 		txt.value = h;
-		notify(previousTrait);
+		notify();
 	};
 	picker.addEventListener("input", () => update(hexToHbs(picker.value)));
 	txt.addEventListener("change", () => {
 		const raw = txt.value.replace("#", "").toUpperCase();
 		if (raw === "") {
-			const previousTrait = structuredClone(trait) as Record<string, unknown>;
 			delete trait.color;
 			txt.value = "";
 			swatch.style.background = "";
 			picker.value = "#000000";
 			picker.removeAttribute("value");
-			notify(previousTrait);
+			notify();
 			return;
 		}
 		if (/^[0-9A-F]{6}$/.test(raw)) update(raw);

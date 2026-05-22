@@ -1,7 +1,6 @@
-import { setSelectionTrait } from "../../core/selectionTraits.ts";
 import type { Disc, StadiumObject } from "../../types/stadium.ts";
 import type { ChangeCallback } from "./inputs.ts";
-import { SectionBuilder } from "./inputs.ts";
+import { SectionBuilder, setOrDelete } from "./inputs.ts";
 import { vec2Number } from "./objectFieldHelpers.ts";
 
 export function renderDiscSection(
@@ -10,7 +9,6 @@ export function renderDiscSection(
 	i: number,
 	notify: ChangeCallback,
 	onDelete: () => void,
-	rebuild?: ChangeCallback,
 ): void {
 	const d = s.discs[i] as Disc;
 	const sec = new SectionBuilder(`Disc #${i}`, parent);
@@ -45,9 +43,8 @@ export function renderDiscSection(
 			notify();
 		})
 		.trait("trait", d.trait, s, (t) => {
-			setSelectionTrait(s, { type: "disc", index: i }, t);
+			setOrDelete(d, "trait", t);
 			notify();
-			rebuild?.();
 		})
 		.button("Delete disc", onDelete, "danger");
 }

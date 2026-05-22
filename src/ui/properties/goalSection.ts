@@ -1,4 +1,3 @@
-import { setSelectionTrait } from "../../core/selectionTraits.ts";
 import type { Goal, StadiumObject } from "../../types/stadium.ts";
 import type { ChangeCallback } from "./inputs.ts";
 import { SectionBuilder, setOrDelete } from "./inputs.ts";
@@ -10,7 +9,6 @@ export function renderGoalSection(
 	i: number,
 	notify: ChangeCallback,
 	onDelete: () => void,
-	rebuild?: ChangeCallback,
 ): void {
 	const g = s.goals[i] as Goal;
 	const sec = new SectionBuilder(`Goal #${i}`, parent).select(
@@ -27,9 +25,8 @@ export function renderGoalSection(
 	vec2Number(sec, "p1.x", g.p1, 0, [0, 0], () => (g.p1 ??= [0, 0]), notify);
 	vec2Number(sec, "p1.y", g.p1, 1, [0, 0], () => (g.p1 ??= [0, 0]), notify)
 		.trait("trait", g.trait, s, (v) => {
-			setSelectionTrait(s, { type: "goal", index: i }, v);
+			setOrDelete(g, "trait", v);
 			notify();
-			rebuild?.();
 		})
 		.button("Delete goal", onDelete, "danger");
 }

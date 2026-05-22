@@ -45,11 +45,7 @@ export class VertexTool implements Tool {
 		}
 
 		const p = snapToGrid(pos.x, pos.y, zoom, e.shiftKey);
-		const vertex: Vertex = {
-			...this.ctx.getToolDefaultObject("vertex"),
-			x: Math.round(p.x),
-			y: Math.round(p.y),
-		};
+		const vertex: Vertex = { x: Math.round(p.x), y: Math.round(p.y) };
 		const trait = this.ctx.getToolDefaultTrait("vertex");
 		if (trait) vertex.trait = trait;
 		stadium.vertexes.push(vertex);

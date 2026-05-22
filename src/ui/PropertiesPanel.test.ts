@@ -109,47 +109,6 @@ describe("PropertiesPanel", () => {
 		).toBe(false);
 	});
 
-	it("applies selected trait values to object properties and rebuilds the panel", () => {
-		const s = stadium();
-		s.traits = {
-			ballArea: {
-				radius: 25,
-				color: "ffcc00",
-				bCoef: 0.2,
-				cMask: ["ball", "kick", "score"],
-			},
-		};
-		s.discs[0] = { pos: [3, 4], radius: 8, color: "FFFFFF" };
-		const onChange = vi.fn();
-		const panel = new PropertiesPanel(onChange, vi.fn());
-		panel.setRebuildCallback(() => panel.render(s, { type: "disc", index: 0 }));
-
-		panel.render(s, { type: "disc", index: 0 });
-		const traitSelect = required(
-			[...document.querySelectorAll<HTMLSelectElement>("select")].find(
-				(select) => select.value === "(none)",
-			) ?? null,
-		);
-		traitSelect.value = "ballArea";
-		traitSelect.dispatchEvent(new Event("change"));
-
-		expect(s.discs[0]).toMatchObject({
-			pos: [3, 4],
-			radius: 25,
-			color: "ffcc00",
-			bCoef: 0.2,
-			cMask: ["ball", "kick", "score"],
-			trait: "ballArea",
-		});
-		expect(onChange).toHaveBeenCalledOnce();
-		const radiusRow = [
-			...document.querySelectorAll<HTMLElement>(".prop-row"),
-		].find((row) => row.querySelector(".prop-label")?.textContent === "radius");
-		expect(radiusRow?.querySelector<HTMLInputElement>("input")?.value).toBe(
-			"25",
-		);
-	});
-
 	it("renders global settings without an object selection", () => {
 		const s = stadium();
 		const onChange = vi.fn();

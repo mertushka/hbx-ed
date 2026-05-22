@@ -47,12 +47,11 @@ export class JointTool implements Tool {
 		} else {
 			if (this.pendingD0 !== discIdx) {
 				const joint: Joint = {
+					d0: this.pendingD0,
+					d1: discIdx,
 					length: null,
 					strength: "rigid",
 					color: "000000",
-					...this.ctx.getToolDefaultObject("joint"),
-					d0: this.pendingD0,
-					d1: discIdx,
 				};
 				const trait = this.ctx.getToolDefaultTrait("joint");
 				if (trait) joint.trait = trait;

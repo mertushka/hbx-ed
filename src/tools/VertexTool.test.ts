@@ -26,27 +26,6 @@ describe("VertexTool", () => {
 		expect(harness.ctx.toast).toHaveBeenCalledWith("Added vertex #0");
 	});
 
-	it("inherits remembered vertex properties while keeping new coordinates", () => {
-		const stadium = createTestStadium();
-		const harness = createToolContext(stadium);
-		harness.setToolDefaultObject("vertex", {
-			bCoef: 0.4,
-			cMask: ["ball"],
-			trait: "post",
-		});
-		const tool = new VertexTool(harness.ctx, () => 1);
-
-		tool.onMouseDown({ x: 27, y: 33 }, mouseEvent());
-
-		expect(stadium.vertexes[0]).toEqual({
-			x: 27,
-			y: 33,
-			bCoef: 0.4,
-			cMask: ["ball"],
-			trait: "post",
-		});
-	});
-
 	it("selects a nearby existing vertex instead of creating a duplicate", () => {
 		const stadium = createTestStadium({
 			vertexes: [
