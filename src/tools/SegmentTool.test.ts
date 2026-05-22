@@ -13,6 +13,8 @@ describe("SegmentTool", () => {
 			vertexes: [{ x: 0, y: 0 }],
 		});
 		const harness = createToolContext(stadium);
+		harness.setToolDefaultTrait("vertex", "post");
+		harness.setToolDefaultTrait("segment", "wall");
 		const tool = new SegmentTool(harness.ctx, () => 3);
 
 		tool.onMouseDown({ x: 1, y: 1 }, mouseEvent(true));
@@ -21,7 +23,7 @@ describe("SegmentTool", () => {
 
 		expect(stadium.vertexes).toEqual([
 			{ x: 0, y: 0 },
-			{ x: 20, y: 40 },
+			{ x: 20, y: 40, trait: "post" },
 		]);
 		expect(stadium.segments).toEqual([
 			{
@@ -31,6 +33,7 @@ describe("SegmentTool", () => {
 				color: "ffffff",
 				bCoef: 1,
 				cMask: ["all", "red", "blue"],
+				trait: "wall",
 			},
 		]);
 		expect(harness.ctx.refresh).toHaveBeenCalledTimes(1);

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { StadiumObject } from "../types/stadium.ts";
+import type { ObjectType, StadiumObject } from "../types/stadium.ts";
 import { PropertiesPanel } from "./PropertiesPanel.ts";
 
 function required<T extends Element>(value: T | null): T {
@@ -107,5 +107,77 @@ describe("PropertiesPanel", () => {
 				.getElementById("props-placeholder")
 				?.classList.contains("hidden"),
 		).toBe(false);
+	});
+
+	it("renders global settings without an object selection", () => {
+		const s = stadium();
+		const onChange = vi.fn();
+		const panel = new PropertiesPanel(onChange, vi.fn());
+
+		panel.renderGlobal(s);
+
+		expect(document.querySelector(".prop-section-title")?.textContent).toBe(
+			"Stadium",
+		);
+		const nameInput = required(
+			document.querySelector<HTMLInputElement>(".prop-input"),
+		);
+		nameInput.value = "Renamed";
+		nameInput.dispatchEvent(new Event("change"));
+
+		expect(s.name).toBe("Renamed");
+		expect(onChange).toHaveBeenCalledOnce();
+	});
+
+	it("renders tool default trait controls without dirtying the stadium", () => {
+		const s = stadium();
+		const defaults: Partial<Record<ObjectType, string>> = {};
+		const panel = new PropertiesPanel(vi.fn(), vi.fn(), {
+			getToolDefaultTrait: (type) => defaults[type],
+			setToolDefaultTrait: (type, trait) => {
+				if (trait) defaults[type] = trait;
+				else delete defaults[type];
+			},
+		});
+
+		panel.renderGlobal(s);
+		const vertexTrait = [...document.querySelectorAll(".prop-row")].find(
+			(row) => row.querySelector(".prop-label")?.textContent === "vertex trait",
+		);
+		const select = required(vertexTrait?.querySelector("select") ?? null);
+		select.value = "wall";
+		select.dispatchEvent(new Event("change"));
+
+		expect(defaults.vertex).toBe("wall");
+	});
+
+	it("batch-edits traits for multi-selection", () => {
+		const s = stadium();
+		s.vertexes[0] = { x: 1, y: 2, trait: "wall" };
+		s.segments[0] = { v0: 0, v1: 0, color: "FFFFFF" };
+		const onChange = vi.fn();
+		const panel = new PropertiesPanel(onChange, vi.fn());
+
+		panel.renderMultiSelection(s, {
+			items: [
+				{ type: "vertex", index: 0 },
+				{ type: "segment", index: 0 },
+			],
+		});
+
+		expect(document.querySelector(".prop-section-title")?.textContent).toBe(
+			"Batch Edit (2 objects)",
+		);
+		const traitSelect = required(
+			document.querySelector<HTMLSelectElement>(".prop-section select"),
+		);
+		expect(traitSelect.value).toBe("(mixed)");
+
+		traitSelect.value = "wall";
+		traitSelect.dispatchEvent(new Event("change"));
+
+		expect(s.vertexes[0]?.trait).toBe("wall");
+		expect(s.segments[0]?.trait).toBe("wall");
+		expect(onChange).toHaveBeenCalledOnce();
 	});
 });

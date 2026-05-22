@@ -1,4 +1,5 @@
 import type { WorldPoint } from "../core/camera.ts";
+import type { Vertex } from "../types/stadium.ts";
 import { snapToGrid } from "../utils/math.ts";
 import type { AppContext } from "./context.ts";
 import type { Tool } from "./types.ts";
@@ -44,7 +45,10 @@ export class VertexTool implements Tool {
 		}
 
 		const p = snapToGrid(pos.x, pos.y, zoom, e.shiftKey);
-		stadium.vertexes.push({ x: Math.round(p.x), y: Math.round(p.y) });
+		const vertex: Vertex = { x: Math.round(p.x), y: Math.round(p.y) };
+		const trait = this.ctx.getToolDefaultTrait("vertex");
+		if (trait) vertex.trait = trait;
+		stadium.vertexes.push(vertex);
 		const idx = stadium.vertexes.length - 1;
 
 		this.ctx.saveHistory();

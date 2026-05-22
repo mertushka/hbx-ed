@@ -15,6 +15,11 @@ import {
 	bindToolbarButtons as bindToolbarButtonControls,
 	syncOverlayToggleButtons,
 } from "./app/toolbarBindings.ts";
+import {
+	getValidToolDefaultTrait,
+	setToolDefaultTrait,
+	type ToolDefaultTraits,
+} from "./app/toolDefaults.ts";
 import { renderValidationPanel } from "./app/validationPanel.ts";
 import { Camera } from "./core/camera.ts";
 import {
@@ -39,11 +44,12 @@ import type { Tool } from "./tools/types.ts";
 import { VertexTool } from "./tools/VertexTool.ts";
 import type {
 	MultiSelection,
+	ObjectType,
 	Selection,
 	StadiumObject,
 } from "./types/stadium.ts";
 import { ContextMenu } from "./ui/ContextMenu.ts";
-import { ObjectTree } from "./ui/ObjectTree.ts";
+import { ObjectTree, type ObjectTreeSelectModifiers } from "./ui/ObjectTree.ts";
 import { PropertiesPanel } from "./ui/PropertiesPanel.ts";
 import { StatusBar } from "./ui/StatusBar.ts";
 import { Toast } from "./ui/Toast.ts";
@@ -85,6 +91,9 @@ export class App {
 
 	// Clipboard for copy/paste
 	private clipboard: ClipboardEntry | null = null;
+
+	private readonly toolDefaultTraits: ToolDefaultTraits = {};
+	private objectTreeSelectionAnchor: Selection | null = null;
 
 	private revealAnimationFrame: number | null = null;
 	private revealAnimationToken = 0;
@@ -150,7 +159,7 @@ export class App {
 		});
 
 		this.objectTree = new ObjectTree(
-			(sel) => this.select(sel),
+			(sel, modifiers) => this.selectFromObjectTree(sel, modifiers),
 			(e, sel) => this.showObjectContextMenu(e, sel),
 			() => this.saveMutation(),
 		);
@@ -168,13 +177,15 @@ export class App {
 				this.render();
 			},
 			() => this.deleteSelected(),
+			{
+				getToolDefaultTrait: (type) => this.getToolDefaultTrait(type),
+				setToolDefaultTrait: (type, trait) => {
+					setToolDefaultTrait(this.toolDefaultTraits, type, trait);
+				},
+			},
 		);
 		// When a trait is added or deleted, rebuild the full panel.
-		this.propertiesPanel.setRebuildCallback(() => {
-			if (this.stadium && this.selection) {
-				this.propertiesPanel.render(this.stadium, this.selection);
-			}
-		});
+		this.propertiesPanel.setRebuildCallback(() => this.renderProperties());
 
 		this.selectionController = new SelectionController({
 			editorState: this.editorState,
@@ -224,6 +235,7 @@ export class App {
 			setSelection: (sel) => this.select(sel),
 			getMultiSelection: () => this.multiSelection,
 			setMultiSelection: (ms) => this.selectionController.setMultiSelection(ms),
+			getToolDefaultTrait: (type) => this.getToolDefaultTrait(type),
 			saveHistory: () => {
 				this.saveMutation();
 			},
@@ -277,6 +289,63 @@ export class App {
 		this.revealSelected(sel);
 	}
 
+	private selectFromObjectTree(
+		sel: Selection,
+		modifiers: ObjectTreeSelectModifiers,
+	): void {
+		if (modifiers.range && this.objectTreeSelectionAnchor?.type === sel.type) {
+			this.selectObjectTreeRange(this.objectTreeSelectionAnchor, sel);
+			return;
+		}
+
+		if (modifiers.toggle || modifiers.range) {
+			this.toggleObjectTreeSelection(sel);
+			this.objectTreeSelectionAnchor = sel;
+			return;
+		}
+
+		this.objectTreeSelectionAnchor = sel;
+		this.select(sel);
+	}
+
+	private toggleObjectTreeSelection(sel: Selection): void {
+		const base =
+			this.multiSelection?.items ?? (this.selection ? [this.selection] : []);
+		const existingIndex = base.findIndex(
+			(item) => item.type === sel.type && item.index === sel.index,
+		);
+		const items =
+			existingIndex >= 0
+				? base.filter((_, index) => index !== existingIndex)
+				: [...base, sel];
+		this.applyObjectTreeMultiSelection(items);
+	}
+
+	private selectObjectTreeRange(anchor: Selection, sel: Selection): void {
+		const count = this.objectCount(anchor.type);
+		const start = Math.max(0, Math.min(anchor.index, sel.index));
+		const end = Math.min(count - 1, Math.max(anchor.index, sel.index));
+		const items: Selection[] = [];
+		for (let index = start; index <= end; index++) {
+			items.push({ type: anchor.type, index });
+		}
+		this.applyObjectTreeMultiSelection(items);
+	}
+
+	private applyObjectTreeMultiSelection(items: Selection[]): void {
+		if (items.length === 0) {
+			this.select(null);
+			return;
+		}
+		if (items.length === 1) {
+			this.select(items[0] ?? null);
+			return;
+		}
+
+		this.selectionController.setMultiSelection({ items });
+		this.revealSelected(items[0] ?? null);
+	}
+
 	private selectValidationTargets(targets: Selection[]): void {
 		if (targets.length === 0) return;
 		if (targets.length === 1) {
@@ -285,7 +354,6 @@ export class App {
 		}
 
 		this.selectionController.setMultiSelection({ items: targets });
-		this.selectionController.select(null);
 		this.revealSelected(targets[0] ?? null);
 	}
 
@@ -417,6 +485,28 @@ export class App {
 		this.toast.show(`Pasted ${nextSelection.type} → #${nextSelection.index}`);
 	}
 
+	private getToolDefaultTrait(type: ObjectType): string | undefined {
+		return getValidToolDefaultTrait(this.stadium, this.toolDefaultTraits, type);
+	}
+
+	private objectCount(type: ObjectType): number {
+		if (!this.stadium) return 0;
+		switch (type) {
+			case "vertex":
+				return this.stadium.vertexes.length;
+			case "segment":
+				return this.stadium.segments.length;
+			case "disc":
+				return this.stadium.discs.length;
+			case "goal":
+				return this.stadium.goals.length;
+			case "plane":
+				return this.stadium.planes.length;
+			case "joint":
+				return this.stadium.joints.length;
+		}
+	}
+
 	private saveMutation(): void {
 		if (!this.editorState.saveMutation()) return;
 		this.runValidation();
@@ -479,10 +569,27 @@ export class App {
 
 	private refresh(): void {
 		this.objectTree.render(this.stadium, this.selection, this.multiSelection);
-		if (this.stadium && this.selection) {
-			this.propertiesPanel.render(this.stadium, this.selection);
-		}
+		this.renderProperties();
 		this.render();
+	}
+
+	private renderProperties(): void {
+		if (!this.stadium) {
+			this.propertiesPanel.clear();
+			return;
+		}
+		if (this.selection) {
+			this.propertiesPanel.render(this.stadium, this.selection);
+			return;
+		}
+		if (this.multiSelection && this.multiSelection.items.length > 1) {
+			this.propertiesPanel.renderMultiSelection(
+				this.stadium,
+				this.multiSelection,
+			);
+			return;
+		}
+		this.propertiesPanel.renderGlobal(this.stadium);
 	}
 
 	private fitView(): void {

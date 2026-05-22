@@ -121,6 +121,15 @@ function propInputFor(label: string): HTMLInputElement {
 	return input;
 }
 
+function propSelectFor(label: string): HTMLSelectElement {
+	const row = [...document.querySelectorAll<HTMLElement>(".prop-row")].find(
+		(el) => el.querySelector<HTMLElement>(".prop-label")?.textContent === label,
+	);
+	const select = row?.querySelector<HTMLSelectElement>("select");
+	if (!select) throw new Error(`Expected property select for ${label}`);
+	return select;
+}
+
 interface AppInternals {
 	camera: {
 		x: number;
@@ -210,6 +219,9 @@ describe("App", () => {
 
 		expect(document.getElementById("stadium-name-display")?.textContent).toBe(
 			"Classic",
+		);
+		expect(document.getElementById("props-inner")?.textContent).toContain(
+			"Stadium",
 		);
 		document.querySelector<HTMLButtonElement>('[data-tool="pan"]')?.click();
 		expect(
@@ -606,6 +618,83 @@ describe("App", () => {
 		} finally {
 			restoreFileReader();
 		}
+	});
+
+	it("applies preselected tool traits to newly drawn segment objects", () => {
+		const restoreFileReader = installFileReaderMock(
+			() => `{
+			name: 'Tool Defaults',
+			width: 100,
+			height: 50,
+			traits: { post: {}, wall: {} },
+			vertexes: [],
+			segments: [],
+			goals: [],
+			discs: [],
+			planes: [],
+			joints: [],
+		}`,
+		);
+		try {
+			const app = new App();
+			const internals = appInternals(app);
+			const fileInput = document.getElementById(
+				"file-input",
+			) as HTMLInputElement;
+			Object.defineProperty(fileInput, "files", {
+				value: [new File([""], "tool-defaults.hbs")],
+				configurable: true,
+			});
+			fileInput.dispatchEvent(new Event("change"));
+
+			const vertexTrait = propSelectFor("vertex trait");
+			vertexTrait.value = "post";
+			vertexTrait.dispatchEvent(new Event("change"));
+			const segmentTrait = propSelectFor("segment trait");
+			segmentTrait.value = "wall";
+			segmentTrait.dispatchEvent(new Event("change"));
+
+			click('[data-tool="segment"]');
+			canvasMouse("mousedown", 390, 200);
+			canvasMouse("mousedown", 410, 200);
+
+			expect(internals.stadium?.vertexes[0]?.trait).toBe("post");
+			expect(internals.stadium?.vertexes[1]?.trait).toBe("post");
+			expect(internals.stadium?.segments[0]?.trait).toBe("wall");
+		} finally {
+			restoreFileReader();
+		}
+	});
+
+	it("supports object tree ctrl and shift multi-selection", () => {
+		const app = new App();
+		const internals = appInternals(app);
+
+		itemContaining("v0 (").click();
+		itemContaining("v1 (").dispatchEvent(
+			new MouseEvent("click", { bubbles: true, ctrlKey: true }),
+		);
+
+		expect(internals.multiSelection?.items).toEqual([
+			{ type: "vertex", index: 0 },
+			{ type: "vertex", index: 1 },
+		]);
+		expect(document.getElementById("status-sel")?.textContent).toBe(
+			"2 objects selected",
+		);
+
+		itemContaining("v3 (").dispatchEvent(
+			new MouseEvent("click", { bubbles: true, shiftKey: true }),
+		);
+
+		expect(internals.multiSelection?.items).toEqual([
+			{ type: "vertex", index: 1 },
+			{ type: "vertex", index: 2 },
+			{ type: "vertex", index: 3 },
+		]);
+		expect(document.querySelector(".prop-section-title")?.textContent).toBe(
+			"Batch Edit (3 objects)",
+		);
 	});
 
 	it("switches and deletes goals from the context menu", () => {

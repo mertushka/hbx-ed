@@ -11,6 +11,7 @@ describe("PlacementTools", () => {
 	it("adds a snapped disc with editor defaults and selects it", () => {
 		const stadium = createTestStadium();
 		const harness = createToolContext(stadium);
+		harness.setToolDefaultTrait("disc", "ball");
 		const tool = new DiscTool(harness.ctx, () => 3);
 
 		tool.onMouseDown({ x: 27, y: 33 }, mouseEvent(true));
@@ -24,6 +25,7 @@ describe("PlacementTools", () => {
 				color: "FFFFFF",
 				bCoef: 0.5,
 				cMask: ["all"],
+				trait: "ball",
 			},
 		]);
 		expect(harness.ctx.saveHistory).toHaveBeenCalledTimes(1);
@@ -34,6 +36,7 @@ describe("PlacementTools", () => {
 	it("adds a vertical red goal centered on the snapped point", () => {
 		const stadium = createTestStadium();
 		const harness = createToolContext(stadium);
+		harness.setToolDefaultTrait("goal", "net");
 		const tool = new GoalTool(harness.ctx, () => 3);
 
 		tool.onMouseDown({ x: 27, y: 33 }, mouseEvent(true));
@@ -43,6 +46,7 @@ describe("PlacementTools", () => {
 				p0: [20, -10],
 				p1: [20, 90],
 				team: "red",
+				trait: "net",
 			},
 		]);
 		expect(harness.ctx.saveHistory).toHaveBeenCalledTimes(1);
@@ -55,6 +59,7 @@ describe("PlacementTools", () => {
 	it("adds a plane at the snapped y coordinate and selects it", () => {
 		const stadium = createTestStadium();
 		const harness = createToolContext(stadium);
+		harness.setToolDefaultTrait("plane", "wall");
 		const tool = new PlaneTool(harness.ctx, () => 3);
 
 		tool.onMouseDown({ x: 27, y: 33 }, mouseEvent(true));
@@ -65,6 +70,7 @@ describe("PlacementTools", () => {
 				dist: 40,
 				bCoef: 1,
 				cMask: ["all", "red", "blue", "ball"],
+				trait: "wall",
 			},
 		]);
 		expect(harness.ctx.saveHistory).toHaveBeenCalledTimes(1);

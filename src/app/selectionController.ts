@@ -25,6 +25,11 @@ interface SelectionObjectTree {
 
 interface SelectionPropertiesPanel {
 	clear(): void;
+	renderGlobal(stadium: StadiumObject): void;
+	renderMultiSelection(
+		stadium: StadiumObject,
+		multiSelection: MultiSelection,
+	): void;
 	render(stadium: StadiumObject, selection: Selection): void;
 }
 
@@ -72,7 +77,14 @@ export class SelectionController {
 		this.objectTree.render(stadium, selection, this.editorState.multiSelection);
 
 		if (!selection || !stadium) {
-			this.propertiesPanel.clear();
+			const multiSelection = this.editorState.multiSelection;
+			if (stadium && multiSelection && multiSelection.items.length > 1) {
+				this.propertiesPanel.renderMultiSelection(stadium, multiSelection);
+			} else if (stadium) {
+				this.propertiesPanel.renderGlobal(stadium);
+			} else {
+				this.propertiesPanel.clear();
+			}
 			this.statusBar.setSelection(
 				this.editorState.multiSelection
 					? `${this.editorState.multiSelection.items.length} objects selected`
@@ -93,6 +105,13 @@ export class SelectionController {
 		this.renderer.multiSelection = multiSelection;
 
 		const count = multiSelection?.items.length ?? 0;
+		const stadium = this.getStadium();
+		this.objectTree.render(stadium, this.editorState.selection, multiSelection);
+		if (stadium && count > 1 && multiSelection) {
+			this.propertiesPanel.renderMultiSelection(stadium, multiSelection);
+		} else if (stadium && !this.editorState.selection) {
+			this.propertiesPanel.renderGlobal(stadium);
+		}
 		if (count > 1) {
 			this.statusBar.setSelection(`${count} objects selected`);
 		}
@@ -108,7 +127,11 @@ export class SelectionController {
 		if (!hadMultiSelection) return false;
 
 		this.statusBar.setSelection("nothing selected");
-		this.objectTree.render(this.getStadium(), this.editorState.selection, null);
+		const stadium = this.getStadium();
+		this.objectTree.render(stadium, this.editorState.selection, null);
+		if (stadium && !this.editorState.selection) {
+			this.propertiesPanel.renderGlobal(stadium);
+		}
 		this.renderCanvas();
 		return true;
 	}

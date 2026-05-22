@@ -12,6 +12,7 @@ describe("JointTool", () => {
 			],
 		});
 		const harness = createToolContext(stadium);
+		harness.setToolDefaultTrait("joint", "rope");
 		const tool = new JointTool(harness.ctx, () => 2);
 
 		tool.onMouseDown({ x: 1, y: 1 });
@@ -25,6 +26,7 @@ describe("JointTool", () => {
 				length: null,
 				strength: "rigid",
 				color: "000000",
+				trait: "rope",
 			},
 		]);
 		expect(harness.ctx.refresh).toHaveBeenCalledTimes(1);

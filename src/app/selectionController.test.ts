@@ -27,6 +27,8 @@ function setup() {
 	const propertiesPanel = {
 		clear: vi.fn(),
 		render: vi.fn(),
+		renderGlobal: vi.fn(),
+		renderMultiSelection: vi.fn(),
 	};
 	const statusBar = { setSelection: vi.fn() };
 	const render = vi.fn();
@@ -72,7 +74,7 @@ describe("SelectionController", () => {
 		expect(statusBar.setSelection).toHaveBeenCalledWith("vertex #0 selected");
 	});
 
-	it("clears properties and reports multi-selection count when selection is null", () => {
+	it("renders batch properties and reports multi-selection count when selection is null", () => {
 		const {
 			controller,
 			editorState,
@@ -92,12 +94,25 @@ describe("SelectionController", () => {
 		controller.select(null);
 
 		expect(objectTree.render).toHaveBeenCalledWith(s, null, multiSelection);
-		expect(propertiesPanel.clear).toHaveBeenCalledOnce();
+		expect(propertiesPanel.renderMultiSelection).toHaveBeenCalledWith(
+			s,
+			multiSelection,
+		);
+		expect(propertiesPanel.clear).not.toHaveBeenCalled();
 		expect(statusBar.setSelection).toHaveBeenCalledWith("2 objects selected");
 	});
 
 	it("syncs multi-selection to the renderer and status bar", () => {
-		const { controller, editorState, render, renderer, statusBar } = setup();
+		const {
+			controller,
+			editorState,
+			objectTree,
+			propertiesPanel,
+			render,
+			renderer,
+			s,
+			statusBar,
+		} = setup();
 		const multiSelection: MultiSelection = {
 			items: [
 				{ type: "vertex", index: 0 },
@@ -109,6 +124,11 @@ describe("SelectionController", () => {
 
 		expect(editorState.multiSelection).toBe(multiSelection);
 		expect(renderer.multiSelection).toBe(multiSelection);
+		expect(objectTree.render).toHaveBeenCalledWith(s, null, multiSelection);
+		expect(propertiesPanel.renderMultiSelection).toHaveBeenCalledWith(
+			s,
+			multiSelection,
+		);
 		expect(statusBar.setSelection).toHaveBeenCalledWith("2 objects selected");
 		expect(render).toHaveBeenCalledOnce();
 		expect(controller.contains({ type: "segment", index: 0 })).toBe(true);
@@ -116,19 +136,36 @@ describe("SelectionController", () => {
 	});
 
 	it("syncs empty multi-selection without touching status text", () => {
-		const { controller, editorState, render, renderer, statusBar } = setup();
+		const {
+			controller,
+			editorState,
+			propertiesPanel,
+			render,
+			renderer,
+			s,
+			statusBar,
+		} = setup();
 
 		controller.setMultiSelection(null);
 
 		expect(editorState.multiSelection).toBeNull();
 		expect(renderer.multiSelection).toBeNull();
+		expect(propertiesPanel.renderGlobal).toHaveBeenCalledWith(s);
 		expect(statusBar.setSelection).not.toHaveBeenCalled();
 		expect(render).toHaveBeenCalledOnce();
 		expect(controller.contains({ type: "vertex", index: 0 })).toBe(false);
 	});
 
 	it("syncs single-item multi-selection without touching status text", () => {
-		const { controller, editorState, render, renderer, statusBar } = setup();
+		const {
+			controller,
+			editorState,
+			propertiesPanel,
+			render,
+			renderer,
+			s,
+			statusBar,
+		} = setup();
 		const multiSelection: MultiSelection = {
 			items: [{ type: "vertex", index: 0 }],
 		};
@@ -137,6 +174,7 @@ describe("SelectionController", () => {
 
 		expect(editorState.multiSelection).toBe(multiSelection);
 		expect(renderer.multiSelection).toBe(multiSelection);
+		expect(propertiesPanel.renderGlobal).toHaveBeenCalledWith(s);
 		expect(statusBar.setSelection).not.toHaveBeenCalled();
 		expect(render).toHaveBeenCalledOnce();
 		expect(controller.contains({ type: "vertex", index: 0 })).toBe(true);
@@ -144,8 +182,15 @@ describe("SelectionController", () => {
 	});
 
 	it("clears multi-selection only when one exists", () => {
-		const { controller, editorState, objectTree, render, renderer, statusBar } =
-			setup();
+		const {
+			controller,
+			editorState,
+			objectTree,
+			propertiesPanel,
+			render,
+			renderer,
+			statusBar,
+		} = setup();
 
 		expect(controller.clearMultiSelection()).toBe(false);
 
@@ -163,6 +208,9 @@ describe("SelectionController", () => {
 			editorState.stadium,
 			editorState.selection,
 			null,
+		);
+		expect(propertiesPanel.renderGlobal).toHaveBeenCalledWith(
+			editorState.stadium,
 		);
 		expect(render).toHaveBeenCalledOnce();
 	});

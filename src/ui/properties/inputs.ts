@@ -219,6 +219,11 @@ export class SectionBuilder {
 		return this;
 	}
 
+	appendRow(label: string, input: HTMLElement): this {
+		this.section.appendChild(buildRow(label, input));
+		return this;
+	}
+
 	color(label: string, value: unknown, onChange: (hex6: string) => void): this {
 		this.section.appendChild(buildRow(label, colorInput(value, onChange)));
 		return this;

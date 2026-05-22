@@ -7,7 +7,15 @@ import type {
 } from "../types/stadium.ts";
 import { parseColor } from "../utils/color.ts";
 
-type SelectCallback = (sel: Selection) => void;
+export interface ObjectTreeSelectModifiers {
+	range: boolean;
+	toggle: boolean;
+}
+
+type SelectCallback = (
+	sel: Selection,
+	modifiers: ObjectTreeSelectModifiers,
+) => void;
 type ContextMenuCallback = (e: MouseEvent, sel: Selection) => void;
 type VisToggleCallback = () => void;
 
@@ -197,13 +205,22 @@ export class ObjectTree {
 					e.stopPropagation();
 					seg.vis = seg.vis === false;
 					this.onVisToggle();
-					this.onSelect({ type: "segment", index: i });
+					this.onSelect(
+						{ type: "segment", index: i },
+						{ range: false, toggle: false },
+					);
 				});
 				el.appendChild(visBtn);
 			}
 
-			el.addEventListener("click", () =>
-				this.onSelect({ type: group.type, index: i }),
+			el.addEventListener("click", (event) =>
+				this.onSelect(
+					{ type: group.type, index: i },
+					{
+						range: event.shiftKey,
+						toggle: event.ctrlKey || event.metaKey,
+					},
+				),
 			);
 			el.addEventListener("contextmenu", (e) => {
 				e.preventDefault();
