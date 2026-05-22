@@ -60,6 +60,39 @@ describe("SegmentTool", () => {
 		expect(harness.selection).toEqual({ type: "segment", index: 0 });
 	});
 
+	it("inherits remembered vertex and segment properties", () => {
+		const stadium = createTestStadium({
+			vertexes: [{ x: 0, y: 0 }],
+		});
+		const harness = createToolContext(stadium);
+		harness.setToolDefaultObject("vertex", { bCoef: 0.3, cMask: ["ball"] });
+		harness.setToolDefaultObject("segment", {
+			color: "00ff00",
+			bCoef: 0.2,
+			cMask: ["ball", "kick"],
+			vis: false,
+		});
+		const tool = new SegmentTool(harness.ctx, () => 3);
+
+		tool.onMouseDown({ x: 1, y: 1 }, mouseEvent(true));
+		tool.onMouseDown({ x: 27, y: 33 }, mouseEvent(true));
+
+		expect(stadium.vertexes[1]).toEqual({
+			x: 20,
+			y: 40,
+			bCoef: 0.3,
+			cMask: ["ball"],
+		});
+		expect(stadium.segments[0]).toMatchObject({
+			v0: 0,
+			v1: 1,
+			color: "00ff00",
+			bCoef: 0.2,
+			cMask: ["ball", "kick"],
+			vis: false,
+		});
+	});
+
 	it("updates the preview while waiting for the second vertex", () => {
 		const stadium = createTestStadium({
 			vertexes: [{ x: 0, y: 0 }],

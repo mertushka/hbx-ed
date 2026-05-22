@@ -410,6 +410,18 @@ describe("stadiumSections", () => {
 		);
 
 		expect(s.traits?.wall).toEqual({ cMask: ["blue"] });
+		expect(s.vertexes[0]).toEqual({
+			x: 0,
+			y: 0,
+			trait: "wall",
+			cMask: ["blue"],
+		});
+		expect(s.segments[0]).toEqual({
+			v0: 0,
+			v1: 0,
+			trait: "wall",
+			cMask: ["blue"],
+		});
 		expect(visible.indeterminate).toBe(true);
 		expect(swatch?.style.background).toBe("");
 		expect(picker?.value).not.toBe("#654321");
