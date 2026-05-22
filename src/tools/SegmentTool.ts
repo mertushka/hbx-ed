@@ -47,6 +47,7 @@ export class SegmentTool implements Tool {
 			v = existingIdx;
 		} else {
 			const vertex: Vertex = {
+				...this.ctx.getToolDefaultObject("vertex"),
 				x: Math.round(snapped.x),
 				y: Math.round(snapped.y),
 			};
@@ -80,6 +81,7 @@ export class SegmentTool implements Tool {
 					color: "ffffff",
 					bCoef: 1,
 					cMask: ["all", "red", "blue"],
+					...this.ctx.getToolDefaultObject("segment"),
 				};
 				const segmentTrait = this.ctx.getToolDefaultTrait("segment");
 				if (segmentTrait) segment.trait = segmentTrait;

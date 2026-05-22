@@ -1,6 +1,7 @@
+import { setSelectionTrait } from "../../core/selectionTraits.ts";
 import type { Segment, StadiumObject } from "../../types/stadium.ts";
 import type { ChangeCallback } from "./inputs.ts";
-import { SectionBuilder, setOrDelete } from "./inputs.ts";
+import { SectionBuilder } from "./inputs.ts";
 
 export function renderSegmentSection(
 	parent: HTMLElement,
@@ -8,6 +9,7 @@ export function renderSegmentSection(
 	i: number,
 	notify: ChangeCallback,
 	onDelete: () => void,
+	rebuild?: ChangeCallback,
 ): void {
 	const seg = s.segments[i] as Segment;
 	new SectionBuilder(`Segment #${i}`, parent)
@@ -49,8 +51,9 @@ export function renderSegmentSection(
 			notify();
 		})
 		.trait("trait", seg.trait, s, (t) => {
-			setOrDelete(seg, "trait", t);
+			setSelectionTrait(s, { type: "segment", index: i }, t);
 			notify();
+			rebuild?.();
 		})
 		.button("Delete segment", onDelete, "danger");
 }

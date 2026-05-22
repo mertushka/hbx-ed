@@ -112,6 +112,7 @@ export class PropertiesPanel {
 		notify: ChangeCallback,
 	): void {
 		const deleteSelection = (): void => this.onDelete(selection);
+		const rebuild = (): void => this.rebuildCallback?.();
 		switch (selection.type) {
 			case "vertex":
 				renderVertexSection(
@@ -120,6 +121,7 @@ export class PropertiesPanel {
 					selection.index,
 					notify,
 					deleteSelection,
+					rebuild,
 				);
 				break;
 			case "segment":
@@ -129,6 +131,7 @@ export class PropertiesPanel {
 					selection.index,
 					notify,
 					deleteSelection,
+					rebuild,
 				);
 				break;
 			case "disc":
@@ -138,6 +141,7 @@ export class PropertiesPanel {
 					selection.index,
 					notify,
 					deleteSelection,
+					rebuild,
 				);
 				break;
 			case "goal":
@@ -147,6 +151,7 @@ export class PropertiesPanel {
 					selection.index,
 					notify,
 					deleteSelection,
+					rebuild,
 				);
 				break;
 			case "plane":
@@ -156,6 +161,7 @@ export class PropertiesPanel {
 					selection.index,
 					notify,
 					deleteSelection,
+					rebuild,
 				);
 				break;
 			case "joint":
@@ -165,6 +171,7 @@ export class PropertiesPanel {
 					selection.index,
 					notify,
 					deleteSelection,
+					rebuild,
 				);
 				break;
 		}

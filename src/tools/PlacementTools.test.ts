@@ -85,6 +85,8 @@ describe("PlacementTools", () => {
 		const harness = createToolContext(stadium);
 		harness.setToolDefaultTrait("disc", "ball");
 		harness.setToolDefaultTrait("disc", undefined);
+		harness.setToolDefaultObject("disc", { radius: 30 });
+		harness.setToolDefaultObject("disc", undefined);
 
 		new DiscTool(harness.ctx, () => 1).onMouseDown(
 			{ x: 1, y: 2 },
@@ -102,6 +104,56 @@ describe("PlacementTools", () => {
 		expect(stadium.discs[0]).not.toHaveProperty("trait");
 		expect(stadium.goals[0]).not.toHaveProperty("trait");
 		expect(stadium.planes[0]).not.toHaveProperty("trait");
+	});
+
+	it("inherits remembered object properties while keeping new geometry", () => {
+		const stadium = createTestStadium();
+		const harness = createToolContext(stadium);
+		harness.setToolDefaultObject("disc", {
+			radius: 22,
+			color: "ff00ff",
+			cMask: ["ball", "kick", "score"],
+			bCoef: 0.1,
+		});
+		harness.setToolDefaultObject("goal", { team: "blue", trait: "net" });
+		harness.setToolDefaultObject("plane", {
+			normal: [1, 0],
+			bCoef: 0.25,
+			cMask: ["ball"],
+		});
+
+		new DiscTool(harness.ctx, () => 1).onMouseDown(
+			{ x: 10, y: 20 },
+			mouseEvent(),
+		);
+		new GoalTool(harness.ctx, () => 1).onMouseDown(
+			{ x: 30, y: 40 },
+			mouseEvent(),
+		);
+		new PlaneTool(harness.ctx, () => 1).onMouseDown(
+			{ x: 50, y: 60 },
+			mouseEvent(),
+		);
+
+		expect(stadium.discs[0]).toMatchObject({
+			pos: [10, 20],
+			radius: 22,
+			color: "ff00ff",
+			cMask: ["ball", "kick", "score"],
+			bCoef: 0.1,
+		});
+		expect(stadium.goals[0]).toMatchObject({
+			p0: [30, -10],
+			p1: [30, 90],
+			team: "blue",
+			trait: "net",
+		});
+		expect(stadium.planes[0]).toMatchObject({
+			normal: [1, 0],
+			dist: 50,
+			bCoef: 0.25,
+			cMask: ["ball"],
+		});
 	});
 
 	it("shows a toast when no stadium is loaded", () => {

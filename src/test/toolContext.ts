@@ -1,5 +1,8 @@
 import { vi } from "vitest";
-
+import type {
+	ToolObjectDefault,
+	ToolObjectDefaults,
+} from "../app/toolDefaults.ts";
 import type { AppContext } from "../tools/context.ts";
 import type {
 	MultiSelection,
@@ -31,6 +34,7 @@ export function createToolContext(stadium: StadiumObject | null) {
 	let selection: Selection | null = null;
 	let multiSelection: MultiSelection | null = null;
 	const toolDefaultTraits: Partial<Record<ObjectType, string>> = {};
+	const toolObjectDefaults: ToolObjectDefaults = {};
 
 	const ctx: AppContext = {
 		getStadium: () => stadium,
@@ -43,6 +47,10 @@ export function createToolContext(stadium: StadiumObject | null) {
 			multiSelection = ms;
 		}),
 		getToolDefaultTrait: vi.fn((type: ObjectType) => toolDefaultTraits[type]),
+		getToolDefaultObject: vi.fn(
+			<T extends ObjectType>(type: T): ToolObjectDefault<T> | undefined =>
+				toolObjectDefaults[type] as ToolObjectDefault<T> | undefined,
+		),
 		saveHistory: vi.fn(),
 		refresh: vi.fn(),
 		toast: vi.fn(),
@@ -62,6 +70,13 @@ export function createToolContext(stadium: StadiumObject | null) {
 		setToolDefaultTrait(type: ObjectType, trait: string | undefined) {
 			if (trait) toolDefaultTraits[type] = trait;
 			else delete toolDefaultTraits[type];
+		},
+		setToolDefaultObject<T extends ObjectType>(
+			type: T,
+			value: ToolObjectDefault<T> | undefined,
+		) {
+			if (value) toolObjectDefaults[type] = value;
+			else delete toolObjectDefaults[type];
 		},
 	};
 }
