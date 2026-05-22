@@ -43,7 +43,7 @@
 		"typescript": "~6.0.2",
 		"vite": "^8.0.13",
 		"vitest": "^4.1.5",
-		"wrangler": "^4.90.0"
+		"wrangler": "^4.92.0"
 	},
 	"dependencies": {
 		"json5": "^2.2.3"
