@@ -45,6 +45,21 @@ describe("SegmentTool", () => {
 		);
 	});
 
+	it("creates segment objects without traits when no defaults are selected", () => {
+		const stadium = createTestStadium({
+			vertexes: [{ x: 0, y: 0 }],
+		});
+		const harness = createToolContext(stadium);
+		const tool = new SegmentTool(harness.ctx, () => 3);
+
+		tool.onMouseDown({ x: 1, y: 1 }, mouseEvent(true));
+		tool.onMouseDown({ x: 27, y: 33 }, mouseEvent(true));
+
+		expect(stadium.vertexes[1]).not.toHaveProperty("trait");
+		expect(stadium.segments[0]).not.toHaveProperty("trait");
+		expect(harness.selection).toEqual({ type: "segment", index: 0 });
+	});
+
 	it("updates the preview while waiting for the second vertex", () => {
 		const stadium = createTestStadium({
 			vertexes: [{ x: 0, y: 0 }],

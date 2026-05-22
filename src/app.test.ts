@@ -143,6 +143,7 @@ interface AppInternals {
 		): { x: number; y: number };
 	};
 	multiSelection: MultiSelection | null;
+	objectCount(type: Selection["type"]): number;
 	objectTree: {
 		render(
 			stadium: StadiumObject | null,
@@ -153,6 +154,8 @@ interface AppInternals {
 	renderer: {
 		multiSelection: MultiSelection | null;
 	};
+	refresh(): void;
+	selection: Selection | null;
 	stadium: StadiumObject | null;
 }
 
@@ -695,6 +698,107 @@ describe("App", () => {
 		expect(document.querySelector(".prop-section-title")?.textContent).toBe(
 			"Batch Edit (3 objects)",
 		);
+	});
+
+	it("collapses object tree toggle selections back to single or none", () => {
+		const app = new App();
+		const internals = appInternals(app);
+
+		itemContaining("v0 (").dispatchEvent(
+			new MouseEvent("click", { bubbles: true, ctrlKey: true }),
+		);
+		expect(internals.selection).toEqual({ type: "vertex", index: 0 });
+		expect(internals.multiSelection).toBeNull();
+
+		itemContaining("v0 (").dispatchEvent(
+			new MouseEvent("click", { bubbles: true, ctrlKey: true }),
+		);
+		expect(internals.selection).toBeNull();
+		expect(internals.multiSelection).toBeNull();
+
+		itemContaining("v3 (").dispatchEvent(
+			new MouseEvent("click", { bubbles: true, shiftKey: true }),
+		);
+		expect(internals.selection).toEqual({ type: "vertex", index: 3 });
+		expect(internals.multiSelection).toBeNull();
+	});
+
+	it("range-selects each object tree group type", () => {
+		const restoreFileReader = installFileReaderMock(
+			() => `{
+			name: 'Range Groups',
+			width: 100,
+			height: 50,
+			vertexes: [{ x: 0, y: 0 }, { x: 20, y: 0 }],
+			segments: [{ v0: 0, v1: 1 }, { v0: 1, v1: 0 }],
+			goals: [
+				{ team: 'red', p0: [0, 0], p1: [0, 10] },
+				{ team: 'blue', p0: [20, 0], p1: [20, 10] },
+			],
+			discs: [{ pos: [0, 0] }, { pos: [20, 0] }],
+			planes: [{ normal: [0, 1], dist: 0 }, { normal: [1, 0], dist: 20 }],
+			joints: [{ d0: 0, d1: 1 }, { d0: 1, d1: 0 }],
+		}`,
+		);
+		try {
+			const app = new App();
+			const internals = appInternals(app);
+			const fileInput = document.getElementById(
+				"file-input",
+			) as HTMLInputElement;
+			Object.defineProperty(fileInput, "files", {
+				value: [new File([""], "range-groups.hbs")],
+				configurable: true,
+			});
+			fileInput.dispatchEvent(new Event("change"));
+
+			const cases: Array<[Selection["type"], string]> = [
+				["segment", "seg"],
+				["disc", "disc"],
+				["goal", "goal"],
+				["plane", "plane"],
+				["joint", "joint"],
+			];
+
+			for (const [type, label] of cases) {
+				itemContaining(`${label}0`).click();
+				itemContaining(`${label}1`).dispatchEvent(
+					new MouseEvent("click", { bubbles: true, shiftKey: true }),
+				);
+				expect(internals.multiSelection?.items).toEqual([
+					{ type, index: 0 },
+					{ type, index: 1 },
+				]);
+			}
+		} finally {
+			restoreFileReader();
+		}
+	});
+
+	it("refreshes global, batch, and empty property panel states", () => {
+		const app = new App();
+		const internals = appInternals(app);
+
+		internals.selection = null;
+		internals.multiSelection = {
+			items: [
+				{ type: "vertex", index: 0 },
+				{ type: "vertex", index: 1 },
+			],
+		};
+		internals.refresh();
+		expect(document.querySelector(".prop-section-title")?.textContent).toBe(
+			"Batch Edit (2 objects)",
+		);
+
+		internals.multiSelection = null;
+		internals.stadium = null;
+		expect(internals.objectCount("vertex")).toBe(0);
+		internals.refresh();
+
+		expect(
+			document.getElementById("props-inner")?.classList.contains("hidden"),
+		).toBe(true);
 	});
 
 	it("switches and deletes goals from the context menu", () => {

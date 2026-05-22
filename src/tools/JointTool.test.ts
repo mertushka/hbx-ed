@@ -38,6 +38,23 @@ describe("JointTool", () => {
 		);
 	});
 
+	it("creates a joint without a trait when no default is selected", () => {
+		const stadium = createTestStadium({
+			discs: [
+				{ pos: [0, 0], radius: 10 },
+				{ pos: [40, 0], radius: 10 },
+			],
+		});
+		const harness = createToolContext(stadium);
+		const tool = new JointTool(harness.ctx, () => 2);
+
+		tool.onMouseDown({ x: 0, y: 0 });
+		tool.onMouseDown({ x: 40, y: 0 });
+
+		expect(stadium.joints[0]).not.toHaveProperty("trait");
+		expect(harness.selection).toEqual({ type: "joint", index: 0 });
+	});
+
 	it("updates the preview while waiting for the second disc", () => {
 		const stadium = createTestStadium({
 			discs: [{ pos: [5, 6], radius: 10 }],

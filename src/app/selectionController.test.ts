@@ -102,6 +102,41 @@ describe("SelectionController", () => {
 		expect(statusBar.setSelection).toHaveBeenCalledWith("2 objects selected");
 	});
 
+	it("clears properties when selection is empty and no stadium is loaded", () => {
+		const editorState = new EditorState();
+		const renderer = { multiSelection: null as MultiSelection | null };
+		const objectTree = { render: vi.fn() };
+		const propertiesPanel = {
+			clear: vi.fn(),
+			render: vi.fn(),
+			renderGlobal: vi.fn(),
+			renderMultiSelection: vi.fn(),
+		};
+		const statusBar = { setSelection: vi.fn() };
+		const render = vi.fn();
+		const controller = new SelectionController({
+			editorState,
+			renderer,
+			objectTree,
+			propertiesPanel,
+			statusBar,
+			getStadium: () => null,
+			render,
+		});
+
+		controller.select(null);
+
+		expect(objectTree.render).toHaveBeenCalledWith(null, null, null);
+		expect(propertiesPanel.clear).toHaveBeenCalledOnce();
+		expect(statusBar.setSelection).toHaveBeenCalledWith("nothing selected");
+		expect(render).toHaveBeenCalledOnce();
+
+		controller.setMultiSelection(null);
+
+		expect(objectTree.render).toHaveBeenLastCalledWith(null, null, null);
+		expect(propertiesPanel.renderGlobal).not.toHaveBeenCalled();
+	});
+
 	it("syncs multi-selection to the renderer and status bar", () => {
 		const {
 			controller,
@@ -154,6 +189,23 @@ describe("SelectionController", () => {
 		expect(statusBar.setSelection).not.toHaveBeenCalled();
 		expect(render).toHaveBeenCalledOnce();
 		expect(controller.contains({ type: "vertex", index: 0 })).toBe(false);
+	});
+
+	it("renders selected object when multi-selection is cleared back to single selection", () => {
+		const { controller, editorState, propertiesPanel, renderer, s, statusBar } =
+			setup();
+		editorState.select({ type: "vertex", index: 0 });
+		renderer.multiSelection = { items: [{ type: "segment", index: 0 }] };
+
+		controller.setMultiSelection(null);
+
+		expect(editorState.multiSelection).toBeNull();
+		expect(renderer.multiSelection).toBeNull();
+		expect(propertiesPanel.render).toHaveBeenCalledWith(s, {
+			type: "vertex",
+			index: 0,
+		});
+		expect(statusBar.setSelection).toHaveBeenCalledWith("vertex #0 selected");
 	});
 
 	it("syncs single-item multi-selection without touching status text", () => {
@@ -212,6 +264,40 @@ describe("SelectionController", () => {
 		expect(propertiesPanel.renderGlobal).toHaveBeenCalledWith(
 			editorState.stadium,
 		);
+		expect(render).toHaveBeenCalledOnce();
+	});
+
+	it("clears multi-selection safely when no stadium is loaded", () => {
+		const editorState = new EditorState();
+		const multiSelection: MultiSelection = {
+			items: [{ type: "segment", index: 0 }],
+		};
+		editorState.setMultiSelection(multiSelection);
+		const renderer = { multiSelection };
+		const objectTree = { render: vi.fn() };
+		const propertiesPanel = {
+			clear: vi.fn(),
+			render: vi.fn(),
+			renderGlobal: vi.fn(),
+			renderMultiSelection: vi.fn(),
+		};
+		const statusBar = { setSelection: vi.fn() };
+		const render = vi.fn();
+		const controller = new SelectionController({
+			editorState,
+			renderer,
+			objectTree,
+			propertiesPanel,
+			statusBar,
+			getStadium: () => null,
+			render,
+		});
+
+		expect(controller.clearMultiSelection()).toBe(true);
+
+		expect(renderer.multiSelection).toBeNull();
+		expect(objectTree.render).toHaveBeenCalledWith(null, null, null);
+		expect(propertiesPanel.renderGlobal).not.toHaveBeenCalled();
 		expect(render).toHaveBeenCalledOnce();
 	});
 });

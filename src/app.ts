@@ -300,7 +300,8 @@ export class App {
 
 		if (modifiers.toggle || modifiers.range) {
 			this.toggleObjectTreeSelection(sel);
-			this.objectTreeSelectionAnchor = sel;
+			this.objectTreeSelectionAnchor =
+				this.selection || this.multiSelection?.items.length ? sel : null;
 			return;
 		}
 
@@ -338,12 +339,12 @@ export class App {
 			return;
 		}
 		if (items.length === 1) {
-			this.select(items[0] ?? null);
+			this.select(items[0] as Selection);
 			return;
 		}
 
 		this.selectionController.setMultiSelection({ items });
-		this.revealSelected(items[0] ?? null);
+		this.revealSelected(items[0] as Selection);
 	}
 
 	private selectValidationTargets(targets: Selection[]): void {

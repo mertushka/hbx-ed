@@ -80,6 +80,30 @@ describe("PlacementTools", () => {
 		);
 	});
 
+	it("does not assign traits when placement tool defaults are empty", () => {
+		const stadium = createTestStadium();
+		const harness = createToolContext(stadium);
+		harness.setToolDefaultTrait("disc", "ball");
+		harness.setToolDefaultTrait("disc", undefined);
+
+		new DiscTool(harness.ctx, () => 1).onMouseDown(
+			{ x: 1, y: 2 },
+			mouseEvent(),
+		);
+		new GoalTool(harness.ctx, () => 1).onMouseDown(
+			{ x: 3, y: 4 },
+			mouseEvent(),
+		);
+		new PlaneTool(harness.ctx, () => 1).onMouseDown(
+			{ x: 5, y: 6 },
+			mouseEvent(),
+		);
+
+		expect(stadium.discs[0]).not.toHaveProperty("trait");
+		expect(stadium.goals[0]).not.toHaveProperty("trait");
+		expect(stadium.planes[0]).not.toHaveProperty("trait");
+	});
+
 	it("shows a toast when no stadium is loaded", () => {
 		const harness = createToolContext(null);
 		const tool = new DiscTool(harness.ctx, () => 1);

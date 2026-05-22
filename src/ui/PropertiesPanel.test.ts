@@ -131,6 +131,7 @@ describe("PropertiesPanel", () => {
 
 	it("renders tool default trait controls without dirtying the stadium", () => {
 		const s = stadium();
+		const originalStadium = structuredClone(s);
 		const defaults: Partial<Record<ObjectType, string>> = {};
 		const panel = new PropertiesPanel(vi.fn(), vi.fn(), {
 			getToolDefaultTrait: (type) => defaults[type],
@@ -149,6 +150,7 @@ describe("PropertiesPanel", () => {
 		select.dispatchEvent(new Event("change"));
 
 		expect(defaults.vertex).toBe("wall");
+		expect(s).toEqual(originalStadium);
 	});
 
 	it("batch-edits traits for multi-selection", () => {
@@ -179,5 +181,12 @@ describe("PropertiesPanel", () => {
 		expect(s.vertexes[0]?.trait).toBe("wall");
 		expect(s.segments[0]?.trait).toBe("wall");
 		expect(onChange).toHaveBeenCalledOnce();
+
+		traitSelect.value = "(none)";
+		traitSelect.dispatchEvent(new Event("change"));
+
+		expect(s.vertexes[0]?.trait).toBeUndefined();
+		expect(s.segments[0]?.trait).toBeUndefined();
+		expect(onChange).toHaveBeenCalledTimes(2);
 	});
 });

@@ -60,6 +60,9 @@ describe("ObjectTree", () => {
 		items[1]?.dispatchEvent(
 			new MouseEvent("click", { bubbles: true, shiftKey: true }),
 		);
+		items[1]?.dispatchEvent(
+			new MouseEvent("click", { bubbles: true, metaKey: true }),
+		);
 
 		expect(onSelect).toHaveBeenNthCalledWith(
 			1,
@@ -70,6 +73,11 @@ describe("ObjectTree", () => {
 			2,
 			{ type: "vertex", index: 1 },
 			{ range: true, toggle: false },
+		);
+		expect(onSelect).toHaveBeenNthCalledWith(
+			3,
+			{ type: "vertex", index: 1 },
+			{ range: false, toggle: true },
 		);
 	});
 

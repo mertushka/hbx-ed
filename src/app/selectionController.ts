@@ -109,11 +109,17 @@ export class SelectionController {
 		this.objectTree.render(stadium, this.editorState.selection, multiSelection);
 		if (stadium && count > 1 && multiSelection) {
 			this.propertiesPanel.renderMultiSelection(stadium, multiSelection);
+		} else if (stadium && this.editorState.selection) {
+			this.propertiesPanel.render(stadium, this.editorState.selection);
 		} else if (stadium && !this.editorState.selection) {
 			this.propertiesPanel.renderGlobal(stadium);
 		}
 		if (count > 1) {
 			this.statusBar.setSelection(`${count} objects selected`);
+		} else if (this.editorState.selection) {
+			this.statusBar.setSelection(
+				`${this.editorState.selection.type} #${this.editorState.selection.index} selected`,
+			);
 		}
 
 		this.renderCanvas();
