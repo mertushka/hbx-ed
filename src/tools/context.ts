@@ -1,3 +1,4 @@
+import type { ToolObjectDefault } from "../app/toolDefaults.ts";
 import type { Renderer } from "../renderer/renderer.ts";
 import type {
 	MultiSelection,
@@ -14,6 +15,9 @@ export interface AppContext {
 	getMultiSelection(): MultiSelection | null;
 	setMultiSelection(ms: MultiSelection | null): void;
 	getToolDefaultTrait(type: ObjectType): string | undefined;
+	getToolDefaultObject<T extends ObjectType>(
+		type: T,
+	): ToolObjectDefault<T> | undefined;
 	saveHistory(): void;
 	refresh(): void;
 	toast(msg: string): void;

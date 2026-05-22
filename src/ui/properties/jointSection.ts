@@ -1,6 +1,7 @@
+import { setSelectionTrait } from "../../core/selectionTraits.ts";
 import type { Joint, StadiumObject } from "../../types/stadium.ts";
 import type { ChangeCallback } from "./inputs.ts";
-import { SectionBuilder, setOrDelete } from "./inputs.ts";
+import { SectionBuilder } from "./inputs.ts";
 
 export function renderJointSection(
 	parent: HTMLElement,
@@ -8,6 +9,7 @@ export function renderJointSection(
 	i: number,
 	notify: ChangeCallback,
 	onDelete: () => void,
+	rebuild?: ChangeCallback,
 ): void {
 	const j = s.joints[i] as Joint;
 	new SectionBuilder(`Joint #${i}`, parent)
@@ -24,8 +26,9 @@ export function renderJointSection(
 			notify();
 		})
 		.trait("trait", j.trait, s, (t) => {
-			setOrDelete(j, "trait", t);
+			setSelectionTrait(s, { type: "joint", index: i }, t);
 			notify();
+			rebuild?.();
 		})
 		.button("Delete joint", onDelete, "danger");
 }

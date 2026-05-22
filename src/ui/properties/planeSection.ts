@@ -1,6 +1,7 @@
+import { setSelectionTrait } from "../../core/selectionTraits.ts";
 import type { Plane, StadiumObject } from "../../types/stadium.ts";
 import type { ChangeCallback } from "./inputs.ts";
-import { SectionBuilder, setOrDelete } from "./inputs.ts";
+import { SectionBuilder } from "./inputs.ts";
 import { vec2Number } from "./objectFieldHelpers.ts";
 
 export function renderPlaneSection(
@@ -9,6 +10,7 @@ export function renderPlaneSection(
 	i: number,
 	notify: ChangeCallback,
 	onDelete: () => void,
+	rebuild?: ChangeCallback,
 ): void {
 	const p = s.planes[i] as Plane;
 	const sec = new SectionBuilder(`Plane #${i}`, parent);
@@ -47,8 +49,9 @@ export function renderPlaneSection(
 			notify();
 		})
 		.trait("trait", p.trait, s, (t) => {
-			setOrDelete(p, "trait", t);
+			setSelectionTrait(s, { type: "plane", index: i }, t);
 			notify();
+			rebuild?.();
 		})
 		.button("Delete plane", onDelete, "danger");
 }
