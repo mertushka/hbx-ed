@@ -41,7 +41,7 @@
 		"jsdom": "^29.1.1",
 		"simple-git-hooks": "^2.13.1",
 		"typescript": "~6.0.2",
-		"vite": "^8.0.11",
+		"vite": "^8.0.13",
 		"vitest": "^4.1.5",
 		"wrangler": "^4.90.0"
 	},
