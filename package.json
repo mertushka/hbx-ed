@@ -36,7 +36,7 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.4.14",
-		"@cloudflare/vite-plugin": "^1.36.3",
+		"@cloudflare/vite-plugin": "^1.37.3",
 		"@vitest/coverage-v8": "^4.1.6",
 		"jsdom": "^29.1.1",
 		"simple-git-hooks": "^2.13.1",
