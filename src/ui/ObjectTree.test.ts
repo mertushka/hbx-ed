@@ -42,7 +42,43 @@ describe("ObjectTree", () => {
 		expect(document.querySelectorAll(".multi-selected")).toHaveLength(1);
 
 		document.querySelector<HTMLElement>(".obj-item")?.click();
-		expect(onSelect).toHaveBeenCalledWith({ type: "vertex", index: 0 });
+		expect(onSelect).toHaveBeenCalledWith(
+			{ type: "vertex", index: 0 },
+			{ range: false, toggle: false },
+		);
+	});
+
+	it("emits modifier intent for ObjectTree multi-selection shortcuts", () => {
+		const onSelect = vi.fn();
+		const tree = new ObjectTree(onSelect, vi.fn(), vi.fn());
+		tree.render(stadium(), null, null);
+		const items = document.querySelectorAll<HTMLElement>(".obj-item");
+
+		items[0]?.dispatchEvent(
+			new MouseEvent("click", { bubbles: true, ctrlKey: true }),
+		);
+		items[1]?.dispatchEvent(
+			new MouseEvent("click", { bubbles: true, shiftKey: true }),
+		);
+		items[1]?.dispatchEvent(
+			new MouseEvent("click", { bubbles: true, metaKey: true }),
+		);
+
+		expect(onSelect).toHaveBeenNthCalledWith(
+			1,
+			{ type: "vertex", index: 0 },
+			{ range: false, toggle: true },
+		);
+		expect(onSelect).toHaveBeenNthCalledWith(
+			2,
+			{ type: "vertex", index: 1 },
+			{ range: true, toggle: false },
+		);
+		expect(onSelect).toHaveBeenNthCalledWith(
+			3,
+			{ type: "vertex", index: 1 },
+			{ range: false, toggle: true },
+		);
 	});
 
 	it("toggles segment visibility", () => {
@@ -56,6 +92,9 @@ describe("ObjectTree", () => {
 
 		expect(s.segments[0]?.vis).toBe(true);
 		expect(onVisToggle).toHaveBeenCalledTimes(1);
-		expect(onSelect).toHaveBeenCalledWith({ type: "segment", index: 0 });
+		expect(onSelect).toHaveBeenCalledWith(
+			{ type: "segment", index: 0 },
+			{ range: false, toggle: false },
+		);
 	});
 });

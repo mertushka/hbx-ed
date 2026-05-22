@@ -11,11 +11,12 @@ describe("VertexTool", () => {
 	it("adds a snapped vertex, saves history, and selects the new vertex", () => {
 		const stadium = createTestStadium();
 		const harness = createToolContext(stadium);
+		harness.setToolDefaultTrait("vertex", "wall");
 		const tool = new VertexTool(harness.ctx, () => 3);
 
 		tool.onMouseDown({ x: 27, y: 33 }, mouseEvent(true));
 
-		expect(stadium.vertexes).toEqual([{ x: 20, y: 40 }]);
+		expect(stadium.vertexes).toEqual([{ x: 20, y: 40, trait: "wall" }]);
 		expect(harness.ctx.saveHistory).toHaveBeenCalledTimes(1);
 		expect(harness.ctx.setSelection).toHaveBeenCalledWith({
 			type: "vertex",

@@ -1,4 +1,5 @@
 import type { WorldPoint } from "../core/camera.ts";
+import type { Joint } from "../types/stadium.ts";
 import type { AppContext } from "./context.ts";
 import type { Tool } from "./types.ts";
 
@@ -45,13 +46,16 @@ export class JointTool implements Tool {
 			);
 		} else {
 			if (this.pendingD0 !== discIdx) {
-				stadium.joints.push({
+				const joint: Joint = {
 					d0: this.pendingD0,
 					d1: discIdx,
 					length: null,
 					strength: "rigid",
 					color: "000000",
-				});
+				};
+				const trait = this.ctx.getToolDefaultTrait("joint");
+				if (trait) joint.trait = trait;
+				stadium.joints.push(joint);
 				const idx = stadium.joints.length - 1;
 				this.ctx.saveHistory();
 				this.ctx.setSelection({ type: "joint", index: idx });

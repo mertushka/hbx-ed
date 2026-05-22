@@ -1,6 +1,7 @@
 import type { Renderer } from "../renderer/renderer.ts";
 import type {
 	MultiSelection,
+	ObjectType,
 	Selection,
 	StadiumObject,
 } from "../types/stadium.ts";
@@ -12,6 +13,7 @@ export interface AppContext {
 	setSelection(sel: Selection | null): void;
 	getMultiSelection(): MultiSelection | null;
 	setMultiSelection(ms: MultiSelection | null): void;
+	getToolDefaultTrait(type: ObjectType): string | undefined;
 	saveHistory(): void;
 	refresh(): void;
 	toast(msg: string): void;

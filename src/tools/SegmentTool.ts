@@ -1,4 +1,5 @@
 import type { WorldPoint } from "../core/camera.ts";
+import type { Segment, Vertex } from "../types/stadium.ts";
 import { snapToGrid } from "../utils/math.ts";
 import type { AppContext } from "./context.ts";
 import type { Tool } from "./types.ts";
@@ -45,10 +46,13 @@ export class SegmentTool implements Tool {
 		if (existingIdx !== null) {
 			v = existingIdx;
 		} else {
-			stadium.vertexes.push({
+			const vertex: Vertex = {
 				x: Math.round(snapped.x),
 				y: Math.round(snapped.y),
-			});
+			};
+			const vertexTrait = this.ctx.getToolDefaultTrait("vertex");
+			if (vertexTrait) vertex.trait = vertexTrait;
+			stadium.vertexes.push(vertex);
 			v = stadium.vertexes.length - 1;
 			newlyCreated = true;
 		}
@@ -69,14 +73,17 @@ export class SegmentTool implements Tool {
 		} else {
 			// Second click — complete the segment
 			if (this.pendingV0 !== v) {
-				stadium.segments.push({
+				const segment: Segment = {
 					v0: this.pendingV0,
 					v1: v,
 					vis: true,
 					color: "ffffff",
 					bCoef: 1,
 					cMask: ["all", "red", "blue"],
-				});
+				};
+				const segmentTrait = this.ctx.getToolDefaultTrait("segment");
+				if (segmentTrait) segment.trait = segmentTrait;
+				stadium.segments.push(segment);
 				const idx = stadium.segments.length - 1;
 				this.ctx.saveHistory();
 				this.ctx.setSelection({ type: "segment", index: idx });

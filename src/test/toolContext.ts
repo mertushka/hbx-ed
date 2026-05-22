@@ -3,6 +3,7 @@ import { vi } from "vitest";
 import type { AppContext } from "../tools/context.ts";
 import type {
 	MultiSelection,
+	ObjectType,
 	Selection,
 	StadiumObject,
 } from "../types/stadium.ts";
@@ -29,6 +30,7 @@ export function createTestStadium(
 export function createToolContext(stadium: StadiumObject | null) {
 	let selection: Selection | null = null;
 	let multiSelection: MultiSelection | null = null;
+	const toolDefaultTraits: Partial<Record<ObjectType, string>> = {};
 
 	const ctx: AppContext = {
 		getStadium: () => stadium,
@@ -40,6 +42,7 @@ export function createToolContext(stadium: StadiumObject | null) {
 		setMultiSelection: vi.fn((ms: MultiSelection | null) => {
 			multiSelection = ms;
 		}),
+		getToolDefaultTrait: vi.fn((type: ObjectType) => toolDefaultTraits[type]),
 		saveHistory: vi.fn(),
 		refresh: vi.fn(),
 		toast: vi.fn(),
@@ -55,6 +58,10 @@ export function createToolContext(stadium: StadiumObject | null) {
 		},
 		get multiSelection() {
 			return multiSelection;
+		},
+		setToolDefaultTrait(type: ObjectType, trait: string | undefined) {
+			if (trait) toolDefaultTraits[type] = trait;
+			else delete toolDefaultTraits[type];
 		},
 	};
 }
